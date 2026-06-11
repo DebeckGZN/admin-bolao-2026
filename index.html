@@ -643,7 +643,7 @@
   <div id="s2" class="screen">
     <div class="section-title">📅 JOGOS <span>& PALPITES</span></div>
     <div class="inner-tabs">
-      <button class="inner-tab active" onclick="filterJogos('hoje',this)">Hoje</button>
+      <button class="inner-tab active" onclick="filterJogos('hoje',this)">📅 Próximos Jogos</button>
       <button class="inner-tab" onclick="filterJogos('todos',this)">Todos</button>
       <button class="inner-tab" onclick="filterJogos('r1',this)">1ª Rodada</button>
       <button class="inner-tab" onclick="filterJogos('r2',this)">2ª Rodada</button>
@@ -694,6 +694,7 @@
           <div class="form-group">
             <label>Rodada</label>
             <select id="selRodada" onchange="renderPalpiteInputs()">
+              <option value="proximos">📅 Próximos Jogos</option>
               <option value="r1">1ª Rodada</option>
               <option value="r2">2ª Rodada</option>
               <option value="r3">3ª Rodada</option>
@@ -790,6 +791,13 @@ const FLAG = {
 };
 
 function f(t){ return (FLAG[t]||'⚽')+' '+t; }
+
+// Data de hoje no Eastern Time (ET = UTC-5 / UTC-4 DST)
+// Usamos ET como referência do "dia de futebol" pois é o fuso da sede da Copa 2026.
+// Jogos que no Brasil são 1h da madrugada ainda são do mesmo dia em ET.
+function todayET(){
+  return new Date().toLocaleDateString('sv-SE', {timeZone:'America/New_York'});
+}
 
 // Todas as partidas (data YYYY-MM-DD, hora horário Brasília)
 const JOGOS_BASE = [
@@ -1131,7 +1139,7 @@ function renderConquistas(rank){
       return p && acertouPlacar(p.c,p.fo,res.c,res.fo);
     });
     if(acertaram.length===1){
-      conquistas.push({icon:'💡',label:'Acertou Sozinho',player:acertaram[0].nome,detail:`Placar de ${jogo.c} x ${jogo.fo}`});
+      conquistas.push({icon:'🦄',label:'Acertou Sozinho',player:acertaram[0].nome,detail:`Placar de ${jogo.c} x ${jogo.fo}`});
     }
   });
 
@@ -1181,9 +1189,10 @@ function filterJogos(f, btn){
 }
 
 function renderJogos(){
-  const today = new Date().toLocaleDateString('sv-SE', {timeZone:'America/Sao_Paulo'}); // YYYY-MM-DD Brasília
+  const todayBRT = new Date().toLocaleDateString('sv-SE', {timeZone:'America/Sao_Paulo'});
+  const todayDate = todayET(); // ET como referência do dia de futebol
   let jogos = JOGOS_BASE;
-  if(currentFilter==='hoje') jogos = JOGOS_BASE.filter(j=>j.d===today);
+  if(currentFilter==='hoje') jogos = JOGOS_BASE.filter(j=>j.d===todayDate);
   else if(currentFilter==='r1') jogos = JOGOS_BASE.filter(j=>j.r==='r1');
   else if(currentFilter==='r2') jogos = JOGOS_BASE.filter(j=>j.r==='r2');
   else if(currentFilter==='r3') jogos = JOGOS_BASE.filter(j=>j.r==='r3');
@@ -1200,7 +1209,7 @@ function renderJogos(){
   jogos.forEach(j=>{ if(!byDate[j.d]) byDate[j.d]=[]; byDate[j.d].push(j); });
 
   container.innerHTML = Object.entries(byDate).sort(([a],[b])=>a.localeCompare(b)).map(([dt, jgs])=>{
-    const isToday = dt===today;
+    const isToday = dt===todayDate;
     const dateLabel = new Date(dt+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
     // fase label for mata-mata groups
     const faseLabel = jgs[0].fase ? ` — <span style="color:var(--gold);font-size:14px;font-family:Inter;font-weight:600">${jgs[0].fase}</span>` : '';
@@ -1212,7 +1221,7 @@ function renderJogos(){
 function renderJogoCard(j){
   const res = ST.resultados[j.id];
   const hasResult = res && res.c!=='' && res.c!==null && res.c!==undefined;
-  const today = new Date().toLocaleDateString('sv-SE', {timeZone:'America/Sao_Paulo'});
+  const today = todayET();
 
   // Resolve real team names for mata-mata games
   let displayC = j.c, displayF = j.fo;
@@ -1592,10 +1601,17 @@ function renderPalpiteInputs(){
   const container = document.getElementById('palpiteInputsContainer');
   if(!jog){ container.innerHTML='<div style="color:var(--text-muted);font-size:13px;padding:8px">Selecione um jogador para inserir palpites.</div>'; return; }
 
-  const jogos = JOGOS_BASE.filter(j=>j.r===rod);
+  let jogos;
+  if(rod==='proximos'){
+    const dt = todayET();
+    jogos = JOGOS_BASE.filter(j=>j.d===dt);
+  } else {
+    jogos = JOGOS_BASE.filter(j=>j.r===rod);
+  }
   const palpJog = ST.palpites[jog]||{};
 
-  container.innerHTML = `<div class="card-title" style="color:var(--text-muted);font-size:14px;margin-bottom:12px">Palpites de <b style="color:var(--text)">${jog}</b> — ${rod==='r1'?'1ª Rodada':rod==='r2'?'2ª Rodada':rod==='r3'?'3ª Rodada':'Mata-Mata'}</div>` +
+  const rodLabel = rod==='proximos'?'Próximos Jogos':rod==='r1'?'1ª Rodada':rod==='r2'?'2ª Rodada':rod==='r3'?'3ª Rodada':'Mata-Mata';
+  container.innerHTML = `<div class="card-title" style="color:var(--text-muted);font-size:14px;margin-bottom:12px">Palpites de <b style="color:var(--text)">${jog}</b> — ${rodLabel}</div>` +
     jogos.map(j=>{
       const p = palpJog[j.id]||{};
       const dateLabel = new Date(j.d+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
