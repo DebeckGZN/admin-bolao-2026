@@ -519,7 +519,6 @@
     <div class="inner-tabs">
       <button class="inner-tab active" onclick="showAdminTabs('manual',this)">Manual</button>
       <button class="inner-tab" onclick="showAdminTabs('jogadores',this)">Jogadores</button>
-      <button class="inner-tab" onclick="showAdminTabs('planilha',this)">📤 Planilha</button>
     </div>
 
     <div id="atab-manual" class="tab-content active">
@@ -569,28 +568,7 @@
       <div class="card-title" style="color:var(--text-muted); font-size:15px; margin-bottom:12px">Jogadores cadastrados</div>
       <div id="jogadoresList" class="players-chips"></div>
     </div>
-
-    <div id="atab-planilha" class="tab-content">
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-title">📤 Importar / Exportar Planilha</div>
-        <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px">
-          A planilha segue o formato CSV com colunas: <code style="color:var(--green); background:var(--navy-light); padding:2px 6px; border-radius:4px">jogador,jogo_id,gols_casa,gols_fora</code>
-        </p>
-        <div class="upload-zone" id="uploadZone" ondragover="this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)" onclick="document.getElementById('fileInput').click()">
-          <div class="upload-icon">📂</div>
-          <div style="font-weight:700; margin-bottom:6px">Arraste o CSV ou clique para selecionar</div>
-          <div class="upload-desc">Sincroniza palpites com o arquivo selecionado</div>
-          <input type="file" id="fileInput" accept=".csv,.json" style="display:none" onchange="importPlanilha(event)">
-        </div>
-        <div class="btn-group" style="margin-top:14px">
-          <button class="btn btn-primary" onclick="exportarPlanilha()">⬇️ Exportar CSV</button>
-          <button class="btn btn-secondary" onclick="exportarJSON()">⬇️ Exportar JSON</button>
-          <button class="btn btn-danger" onclick="if(confirm('Resetar TODOS os dados?')) resetData()">🗑️ Resetar dados</button>
-        </div>
-      </div>
-      <div id="importLog" style="margin-top:10px"></div>
     </div>
-  </div>
 
   <!-- ══ TELA 5: RESULTADOS ══ -->
   <div id="s5" class="screen">
@@ -614,7 +592,7 @@
 // ═══════════════════════════════════════════════════
 //  ⚙️  CONFIGURAÇÃO — substitua pela sua URL do Apps Script
 // ═══════════════════════════════════════════════════
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDdh2hb_pP-8nSKfCISXA1ppyhBQctpqUIE4D3p-F_XhBxlh1GH2qc13ccXDfIrBjK/exec"; // ← cole aqui após implantar
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxXeY6soDgMjouiu__CH9lzIuLQMFBMA6bfNr5oYWbxxf_u8VrYZKCPOnNnuZZNOwsy/exec"; // ← cole aqui após implantar
 // ═══════════════════════════════════════════════════
 //  DATA: GRUPOS & JOGOS COPA 2026
 // ═══════════════════════════════════════════════════
@@ -784,8 +762,9 @@ async function loadFromSheets() {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'SUA_URL_AQUI') return loadLocalState();
   try {
     showSyncBadge('loading');
-    const res = await fetch(APPS_SCRIPT_URL + '?action=load');
+    const res = await fetch(APPS_SCRIPT_URL + '?action=load&t=' + Date.now());
     const data = await res.json();
+    if (!data.jogadores) throw new Error('Resposta inválida do Sheets');
     ST = { jogadores: data.jogadores || [], palpites: data.palpites || {}, resultados: data.resultados || {} };
     localStorage.setItem('bolao2026', JSON.stringify(ST));
     showSyncBadge('ok');
@@ -811,15 +790,27 @@ function save() {
   _syncTimer = setTimeout(() => syncToSheets(), 800);
 }
 
+// Monta URL de GET para escrita (evita CORS/preflight de POST)
+function sheetsURL(action, params = {}) {
+  const base = APPS_SCRIPT_URL + '?action=' + action;
+  const parts = Object.entries(params).map(([k, v]) =>
+    k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : v)
+  );
+  return parts.length ? base + '&' + parts.join('&') : base;
+}
+
+async function sheetsGET(action, params = {}) {
+  const url = sheetsURL(action, params);
+  const res = await fetch(url);
+  return res.json();
+}
+
 async function syncToSheets() {
   if (_syncPending) return;
   _syncPending = true;
   showSyncBadge('saving');
   try {
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'save_all', data: ST })
-    });
+    await sheetsGET('save_all', { payload: ST });
     showSyncBadge('ok');
   } catch(e) {
     showSyncBadge('error');
@@ -1456,85 +1447,13 @@ function salvarPalpites(){
   save(); toast(`Palpites de ${jog} salvos! ✅`);
 }
 
-// ═══════════════════════════════════════════════════
-//  PLANILHA IMPORT / EXPORT
-// ═══════════════════════════════════════════════════
 
-function exportarPlanilha(){
-  let csv = 'jogador,jogo_id,time_casa,time_fora,gols_casa,gols_fora\n';
-  ST.jogadores.forEach(j=>{
-    JOGOS_BASE.forEach(jg=>{
-      const p=(ST.palpites[j]||{})[jg.id];
-      const c=p?p.c:'', fo=p?p.fo:'';
-      csv+=`${j},${jg.id},${jg.c},${jg.fo},${c},${fo}\n`;
-    });
-  });
-  downloadFile(csv,'bolao-palpites.csv','text/csv');
-}
 
-function exportarJSON(){
-  downloadFile(JSON.stringify(ST,null,2),'bolao-2026.json','application/json');
-}
 
-function downloadFile(content, name, type){
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([content],{type}));
-  a.download=name; a.click();
-  toast('Arquivo exportado! ⬇️');
-}
 
-function handleDrop(e){
-  e.preventDefault();
-  document.getElementById('uploadZone').classList.remove('drag');
-  const file=e.dataTransfer.files[0];
-  if(file) processFile(file);
-}
 
-function importPlanilha(e){
-  const file=e.target.files[0];
-  if(file) processFile(file);
-}
 
-function processFile(file){
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const text=e.target.result;
-    let log='';
-    if(file.name.endsWith('.json')){
-      try{
-        const data=JSON.parse(text);
-        ST=data; save(); renderAll();
-        log='<div style="color:var(--green);font-size:13px">✅ JSON importado com sucesso!</div>';
-      }catch{ log='<div style="color:var(--red);font-size:13px">❌ JSON inválido.</div>'; }
-    } else {
-      // CSV
-      const lines=text.trim().split('\n').slice(1);
-      let count=0;
-      lines.forEach(line=>{
-        const parts=line.split(',');
-        if(parts.length<6) return;
-        const [jog,,,,gc,gf]=parts;
-        const jid=parts[1];
-        if(!ST.jogadores.includes(jog.trim())) ST.jogadores.push(jog.trim());
-        if(!ST.palpites[jog.trim()]) ST.palpites[jog.trim()]={};
-        if(gc.trim()!==''&&gf.trim()!==''){
-          ST.palpites[jog.trim()][jid]={c:parseInt(gc),fo:parseInt(gf)};
-          count++;
-        }
-      });
-      save(); renderAll();
-      log=`<div style="color:var(--green);font-size:13px">✅ ${count} palpites importados!</div>`;
-    }
-    document.getElementById('importLog').innerHTML=log;
-    toast('Arquivo processado!');
-  };
-  reader.readAsText(file);
-}
 
-function resetData(){
-  ST={jogadores:[],palpites:{},resultados:{},gruposTable:{},bracket:{}};
-  save(); renderAll(); toast('Dados resetados.',true);
-}
 
 // ═══════════════════════════════════════════════════
 //  TELA 5: RESULTADOS ADMIN
