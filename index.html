@@ -404,19 +404,31 @@
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
       background: var(--navy-mid);
       border-top: 1px solid var(--border);
-      padding: 6px 0 env(safe-area-inset-bottom, 6px);
+      padding: 0 0 env(safe-area-inset-bottom, 0px);
     }
     .mobile-nav-bar button {
       flex: 1; background: none; border: none;
       color: var(--text-muted); font-family: 'Inter', sans-serif;
-      font-size: 10px; font-weight: 500; padding: 6px 2px 4px;
+      font-size: 10px; font-weight: 500;
+      /* Área de toque generosa — mínimo 56px de altura (guideline HIG/Material) */
+      min-height: 56px; padding: 8px 2px 6px;
       cursor: pointer; display: flex; flex-direction: column;
-      align-items: center; gap: 3px; transition: color .2s;
+      align-items: center; justify-content: center; gap: 3px;
+      transition: color .15s, background .15s;
       line-height: 1;
+      /* Elimina delay de 300ms e evita highlight cinza no iOS/Android */
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
-    .mobile-nav-bar button .nav-icon { font-size: 20px; }
+    /* pointer-events:none nos filhos garante que o evento dispara sempre no button,
+       nunca no span.nav-icon — resolve o problema de this errado no inline onclick */
+    .mobile-nav-bar button * { pointer-events: none; }
+    .mobile-nav-bar button .nav-icon { font-size: 22px; }
     .mobile-nav-bar button.active { color: var(--green); }
     .mobile-nav-bar button.active .nav-icon { filter: drop-shadow(0 0 4px var(--green)); }
+    /* Feedback visual imediato ao toque */
+    .mobile-nav-bar button:active { background: rgba(255,255,255,.06); }
 
     /* ── Section titles ── */
     .section-title { font-size: 22px; margin-bottom: 14px; }
@@ -593,19 +605,19 @@
 
 <!-- Bottom nav bar (mobile only) -->
 <nav class="mobile-nav-bar" id="mobileNav">
-  <button class="active" onclick="showScreen('s1',this)">
+  <button class="active" data-screen="s1">
     <span class="nav-icon">🏆</span>Ranking
   </button>
-  <button onclick="showScreen('s2',this)">
+  <button data-screen="s2">
     <span class="nav-icon">📅</span>Jogos
   </button>
-  <button onclick="showScreen('s3',this)">
+  <button data-screen="s3">
     <span class="nav-icon">🌍</span>Copa
   </button>
-  <button onclick="showScreen('s4',this)">
+  <button data-screen="s4">
     <span class="nav-icon">✏️</span>Palpites
   </button>
-  <button onclick="showScreen('s5',this)">
+  <button data-screen="s5">
     <span class="nav-icon">📊</span>Result.
   </button>
 </nav>
@@ -1734,20 +1746,44 @@ function salvarResultados(){
 
 function showScreen(id, btn){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  // Sync both desktop nav and mobile nav bar
   document.querySelectorAll('#mainNav button, #mobileNav button').forEach(b=>b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  btn.classList.add('active');
-  // Mirror active state to the other nav
-  const idx = [...btn.parentElement.children].indexOf(btn);
-  const otherNav = btn.closest('#mainNav') ? document.getElementById('mobileNav') : document.getElementById('mainNav');
-  if(otherNav && otherNav.children[idx]) otherNav.children[idx].classList.add('active');
+  // Marcar ativo em ambas as navs pelo data-screen ou posição
+  if(btn.dataset && btn.dataset.screen){
+    // Veio do mobileNav (via listener)
+    btn.classList.add('active');
+    document.querySelectorAll('#mainNav button').forEach((b,i)=>{
+      if([...document.getElementById('mobileNav').children].indexOf(btn)===i) b.classList.add('active');
+    });
+  } else {
+    // Veio do mainNav (onclick inline)
+    btn.classList.add('active');
+    const idx = [...btn.parentElement.children].indexOf(btn);
+    const mob = document.getElementById('mobileNav');
+    if(mob && mob.children[idx]) mob.children[idx].classList.add('active');
+  }
   // Re-render on switch
   if(id==='s1') renderRanking();
   if(id==='s2') renderJogos();
   if(id==='s3'){ renderGrupos(); renderBracket(); }
   if(id==='s4') renderJogadoresAdmin();
   if(id==='s5') renderResultadosAdmin();
+}
+
+function setupMobileNav(){
+  const mob = document.getElementById('mobileNav');
+  if(!mob) return;
+  mob.querySelectorAll('button[data-screen]').forEach(btn=>{
+    // touchstart: resposta instantânea sem delay de 300ms
+    btn.addEventListener('touchstart', function(e){
+      e.preventDefault(); // evita o click fantasma posterior
+      showScreen(this.dataset.screen, this);
+    }, {passive: false});
+    // click: fallback para mouse/desktop que acessar o mobileNav
+    btn.addEventListener('click', function(e){
+      showScreen(this.dataset.screen, this);
+    });
+  });
 }
 
 function renderAll(){
@@ -1768,6 +1804,7 @@ function closePtsModal(){ document.getElementById('modalPontuacao').classList.re
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closePtsModal(); });
 
 document.addEventListener('DOMContentLoaded', async ()=>{
+  setupMobileNav();
   // Render immediately with localStorage data for snappy load
   renderAll();
 
