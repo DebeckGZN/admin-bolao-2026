@@ -767,7 +767,7 @@
 // ═══════════════════════════════════════════════════
 //  ⚙️  CONFIGURAÇÃO — substitua pela sua URL do Apps Script
 // ═══════════════════════════════════════════════════
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxXeY6soDgMjouiu__CH9lzIuLQMFBMA6bfNr5oYWbxxf_u8VrYZKCPOnNnuZZNOwsy/exec"; // ← cole aqui após implantar
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxQkvtZ8qxWiUIa0Ao1CQG-py5qVjXvWLCU8w3WyPBZ2tD2-KApGTtNT6o4xpc-xHQO/exec"; // ← cole aqui após implantar
 // ═══════════════════════════════════════════════════
 //  DATA: GRUPOS & JOGOS COPA 2026
 // ═══════════════════════════════════════════════════
@@ -985,18 +985,24 @@ function save() {
   _syncTimer = setTimeout(() => syncToSheets(), 800);
 }
 
-// Monta URL de GET para escrita (evita CORS/preflight de POST)
-function sheetsURL(action, params = {}) {
-  const base = APPS_SCRIPT_URL + '?action=' + action;
-  const parts = Object.entries(params).map(([k, v]) =>
-    k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : v)
-  );
-  return parts.length ? base + '&' + parts.join('&') : base;
+// Envia dados via POST com content-type text/plain
+// (não dispara preflight CORS, diferente de application/json)
+async function sheetsGET(action, params = {}) {
+  // Leitura simples: GET normal
+  const url = APPS_SCRIPT_URL + '?action=' + action + '&t=' + Date.now();
+  const res = await fetch(url);
+  return res.json();
 }
 
-async function sheetsGET(action, params = {}) {
-  const url = sheetsURL(action, params);
-  const res = await fetch(url);
+async function sheetsPOST(action, data = {}) {
+  // Escrita: POST com text/plain para evitar preflight CORS
+  // O Apps Script lê via e.postData.contents
+  const body = JSON.stringify({ action, ...data });
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body
+  });
   return res.json();
 }
 
@@ -1005,7 +1011,7 @@ async function syncToSheets() {
   _syncPending = true;
   showSyncBadge('saving');
   try {
-    await sheetsGET('save_all', { payload: ST });
+    await sheetsPOST('save_all', { data: ST });
     showSyncBadge('ok');
   } catch(e) {
     showSyncBadge('error');
