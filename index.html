@@ -806,9 +806,22 @@ function f(t){ return (FLAG[t]||'⚽')+' '+t; }
 
 // Data de hoje no Eastern Time (ET = UTC-5 / UTC-4 DST)
 // Usamos ET como referência do "dia de futebol" pois é o fuso da sede da Copa 2026.
-// Jogos que no Brasil são 1h da madrugada ainda são do mesmo dia em ET.
 function todayET(){
   return new Date().toLocaleDateString('sv-SE', {timeZone:'America/New_York'});
+}
+
+// Filtro para "jogos de hoje":
+// - Jogos cuja data === hoje em ET, OU
+// - Jogos cuja data === amanhã em ET com horário '00:00'
+//   (meia-noite ET = 01:00 BRT — parte da mesma rodada do dia anterior)
+function jogosDeHoje(){
+  const hoje = todayET();
+  const d = new Date(hoje + 'T12:00:00');
+  d.setDate(d.getDate() + 1);
+  const amanha = d.toISOString().slice(0, 10);
+  // Jogos de madrugada BRT (00:00 ou 01:00) pertencem à rodada do dia anterior
+  const madrugada = h => h === '00:00' || h === '01:00';
+  return j => j.d === hoje || (j.d === amanha && madrugada(j.h));
 }
 
 // Todas as partidas (data YYYY-MM-DD, hora horário Brasília)
@@ -1204,7 +1217,7 @@ function renderJogos(){
   const todayBRT = new Date().toLocaleDateString('sv-SE', {timeZone:'America/Sao_Paulo'});
   const todayDate = todayET(); // ET como referência do dia de futebol
   let jogos = JOGOS_BASE;
-  if(currentFilter==='hoje') jogos = JOGOS_BASE.filter(j=>j.d===todayDate);
+  if(currentFilter==='hoje') jogos = JOGOS_BASE.filter(jogosDeHoje());
   else if(currentFilter==='r1') jogos = JOGOS_BASE.filter(j=>j.r==='r1');
   else if(currentFilter==='r2') jogos = JOGOS_BASE.filter(j=>j.r==='r2');
   else if(currentFilter==='r3') jogos = JOGOS_BASE.filter(j=>j.r==='r3');
@@ -1615,8 +1628,7 @@ function renderPalpiteInputs(){
 
   let jogos;
   if(rod==='proximos'){
-    const dt = todayET();
-    jogos = JOGOS_BASE.filter(j=>j.d===dt);
+    jogos = JOGOS_BASE.filter(jogosDeHoje());
   } else {
     jogos = JOGOS_BASE.filter(j=>j.r===rod);
   }
