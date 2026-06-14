@@ -585,6 +585,97 @@
   }
   .help-btn:hover { background: var(--green); color: var(--navy); border-color: var(--green); }
 
+
+  /* ── TROFÉUS ── */
+  .trophy-row { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+  .trophy {
+    display:inline-flex; align-items:center; gap:4px;
+    background: rgba(255,215,0,.1); border:1px solid rgba(255,215,0,.25);
+    border-radius:20px; padding:2px 8px; font-size:11px; font-weight:600;
+    color:var(--gold); white-space:nowrap; cursor:default;
+    position:relative;
+  }
+  .trophy:hover .trophy-tip {
+    display:block;
+  }
+  .trophy-tip {
+    display:none; position:absolute; bottom:calc(100% + 6px); left:50%;
+    transform:translateX(-50%); background:var(--navy-mid);
+    border:1px solid var(--border); border-radius:var(--radius-sm);
+    padding:6px 10px; font-size:11px; color:var(--text); font-weight:400;
+    white-space:nowrap; z-index:50; pointer-events:none;
+    box-shadow:0 4px 16px rgba(0,0,0,.4);
+  }
+  .trophy-tip::after {
+    content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%);
+    border:5px solid transparent; border-top-color:var(--border);
+  }
+
+  /* ── MODAL PERFIL JOGADOR ── */
+  .perfil-overlay {
+    display:none; position:fixed; inset:0; z-index:500;
+    background:rgba(0,0,0,.65); backdrop-filter:blur(4px);
+    align-items:flex-start; justify-content:center;
+    padding:16px; overflow-y:auto;
+  }
+  .perfil-overlay.open { display:flex; }
+  .perfil-box {
+    background:var(--navy-mid); border:1px solid var(--border);
+    border-radius:var(--radius); width:100%; max-width:640px;
+    margin:auto; box-shadow:0 24px 64px rgba(0,0,0,.6);
+    animation:fadeIn .2s ease;
+  }
+  .perfil-header {
+    display:flex; align-items:center; gap:12px;
+    padding:20px 24px; border-bottom:1px solid var(--border);
+    position:sticky; top:0; background:var(--navy-mid); z-index:2;
+    border-radius:var(--radius) var(--radius) 0 0;
+  }
+  .perfil-nome { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:1px; }
+  .perfil-pts  { font-family:'Bebas Neue',sans-serif; font-size:32px; color:var(--green); margin-left:auto; }
+  .perfil-pts-lbl { font-size:11px; color:var(--text-muted); text-align:right; line-height:1.2; }
+  .perfil-close {
+    background:none; border:none; color:var(--text-muted); font-size:24px;
+    cursor:pointer; padding:0 4px; transition:color .15s; margin-left:8px;
+  }
+  .perfil-close:hover { color:var(--text); }
+  .perfil-body { padding:20px 24px; }
+  .perfil-section-title {
+    font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:1px;
+    color:var(--text-muted); margin:20px 0 10px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .perfil-section-title:first-child { margin-top:0; }
+
+  .perfil-jogo {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius-sm); padding:10px 14px; margin-bottom:8px;
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  .perfil-jogo-teams { flex:1; font-size:13px; font-weight:600; min-width:160px; }
+  .perfil-jogo-palpite { font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--text-muted); }
+  .perfil-jogo-real { font-size:11px; color:var(--text-muted); }
+
+  .perfil-trophy-list { display:flex; flex-direction:column; gap:8px; }
+  .perfil-trophy-item {
+    display:flex; align-items:center; gap:10px;
+    background:rgba(255,215,0,.06); border:1px solid rgba(255,215,0,.15);
+    border-radius:var(--radius-sm); padding:10px 14px;
+  }
+  .perfil-trophy-icon { font-size:22px; flex-shrink:0; }
+  .perfil-trophy-name { font-weight:700; font-size:13px; color:var(--gold); }
+  .perfil-trophy-reason { font-size:12px; color:var(--text-muted); }
+
+  .rank-name { cursor:pointer; }
+  .rank-name:hover { color:var(--green); text-decoration:underline; }
+
+  @media(max-width:768px){
+    .perfil-header { padding:14px 16px; }
+    .perfil-body { padding:14px 16px; }
+    .perfil-nome { font-size:20px; }
+    .trophy-tip { display:none !important; } /* tooltip não funciona bem em touch */
+  }
+
 </style>
 </head>
 <body>
@@ -641,6 +732,7 @@
             <th>Pontos</th>
             <th>✓ Acertos</th>
             <th>🎯 Placares</th>
+            <th>🏆</th>
           </tr>
         </thead>
         <tbody id="rankingBody"></tbody>
@@ -1081,7 +1173,7 @@ function acertouPlacar(palpC, palpF, realC, realF){
 function calcRanking(){
   const rank = {};
   ST.jogadores.forEach(j=>{
-    rank[j] = {nome:j, pts:0, acertos:0, placares:0, ptsPorJogo:{}};
+    rank[j] = {nome:j, pts:0, acertos:0, placares:0, ptsPorJogo:{}, ptsPorRodada:{r1:0,r2:0,r3:0,mata:0}};
   });
   JOGOS_BASE.forEach(jogo=>{
     const res = ST.resultados[jogo.id];
@@ -1092,11 +1184,121 @@ function calcRanking(){
       const pts = calcPontos(p.c, p.fo, res.c, res.fo);
       rank[j].pts += pts||0;
       rank[j].ptsPorJogo[jogo.id] = pts||0;
+      const rod = jogo.r || 'mata';
+      rank[j].ptsPorRodada[rod] = (rank[j].ptsPorRodada[rod]||0) + (pts||0);
       if(acertouResultado(p.c,p.fo,res.c,res.fo)) rank[j].acertos++;
       if(acertouPlacar(p.c,p.fo,res.c,res.fo)) rank[j].placares++;
     });
   });
   return Object.values(rank).sort((a,b)=>b.pts-a.pts||b.acertos-a.acertos||b.placares-a.placares);
+}
+
+// ═══════════════════════════════════════════════════
+//  SISTEMA DE TROFÉUS
+// ═══════════════════════════════════════════════════
+
+// Verifica se a fase de grupos terminou (todas 72 partidas com resultado)
+function gruposEncerrado(){
+  return JOGOS_BASE.filter(j=>j.r!=='mata').every(j=>{
+    const r=ST.resultados[j.id]; return r&&r.c!==''&&r.c!==null&&r.c!==undefined;
+  });
+}
+// Verifica se o campeonato encerrou (jogo final com resultado)
+function campeonatoEncerrado(){
+  const final=ST.resultados['final_01'];
+  return final&&final.c!==''&&final.c!==null&&final.c!==undefined;
+}
+// Verifica se rodada está encerrada (todos os jogos com resultado)
+function rodadaEncerrada(rod){
+  return JOGOS_BASE.filter(j=>j.r===rod).every(j=>{
+    const r=ST.resultados[j.id]; return r&&r.c!==''&&r.c!==null&&r.c!==undefined;
+  });
+}
+// Verifica se mata-mata encerrou (pelo menos oitavas com resultado)
+function mataMataEncerrado(){
+  return campeonatoEncerrado();
+}
+
+function calcTrofeus(rank){
+  // rank = resultado de calcRanking()
+  // Retorna { nome: [ {icon, label, motivo} ] }
+  const trofeus = {};
+  ST.jogadores.forEach(j=>{ trofeus[j]=[]; });
+
+  const jogosComRes = JOGOS_BASE.filter(j=>{
+    const r=ST.resultados[j.id]; return r&&r.c!==''&&r.c!==null&&r.c!==undefined;
+  }).sort((a,b)=>a.d.localeCompare(b.d)||a.h.localeCompare(b.h));
+
+  // ── Melhor em cada rodada (apenas após encerramento da rodada) ──
+  [['r1','1ª Rodada','🥇'],['r2','2ª Rodada','🥈'],['r3','3ª Rodada','🥉']].forEach(([rod,label,icon])=>{
+    if(!rodadaEncerrada(rod)) return;
+    const jogosR = JOGOS_BASE.filter(j=>j.r===rod);
+    let best=-1, bestNome='';
+    rank.forEach(r=>{
+      const pts=jogosR.reduce((s,jg)=>s+(r.ptsPorJogo[jg.id]||0),0);
+      if(pts>best){best=pts;bestNome=r.nome;}
+    });
+    if(bestNome&&best>0) trofeus[bestNome].push({icon:'🏅',label:`Campeão da ${label}`,motivo:`Melhor pontuação: ${best} pts`});
+  });
+
+  // ── Melhor no mata-mata (apenas após fim do campeonato) ──
+  if(mataMataEncerrado()){
+    const jogosMata=JOGOS_BASE.filter(j=>j.r==='mata');
+    let best=-1,bestNome='';
+    rank.forEach(r=>{
+      const pts=jogosMata.reduce((s,jg)=>s+(r.ptsPorJogo[jg.id]||0),0);
+      if(pts>best){best=pts;bestNome=r.nome;}
+    });
+    if(bestNome&&best>0) trofeus[bestNome].push({icon:'⚔️',label:'Rei do Mata-Mata',motivo:`Melhor pontuação: ${best} pts`});
+  }
+
+  // ── Acertou placar sozinho (tempo real) ──
+  JOGOS_BASE.forEach(jogo=>{
+    const res=ST.resultados[jogo.id];
+    if(!res||res.c===''||res.c===null||res.c===undefined) return;
+    const acertaram=rank.filter(r=>{
+      const p=(ST.palpites[r.nome]||{})[jogo.id];
+      return p&&acertouPlacar(p.c,p.fo,res.c,res.fo);
+    });
+    if(acertaram.length===1){
+      trofeus[acertaram[0].nome].push({icon:'💡',label:'Acertou Sozinho',motivo:`Placar exato de ${f(jogo.c)} ${res.c}–${res.fo} ${f(jogo.fo)}`});
+    }
+  });
+
+  // ── 1500 pontos ──
+  rank.forEach(r=>{
+    if(r.pts>=1500) trofeus[r.nome].push({icon:'💎',label:'1500 Pontos',motivo:`${r.pts} pontos acumulados`});
+  });
+
+  // ── 2500 pontos ──
+  rank.forEach(r=>{
+    if(r.pts>=2500) trofeus[r.nome].push({icon:'💎💎',label:'2500 Pontos',motivo:`${r.pts} pontos acumulados`});
+  });
+
+  // ── Maior sequência (apenas ao fim do campeonato) ──
+  if(campeonatoEncerrado()&&jogosComRes.length>0){
+    let mSeq=0,mNome='';
+    rank.forEach(r=>{
+      let seq=0,mx=0;
+      jogosComRes.forEach(jg=>{ const p=(ST.palpites[r.nome]||{})[jg.id]; const res=ST.resultados[jg.id]; if(p&&acertouResultado(p.c,p.fo,res.c,res.fo)){seq++;if(seq>mx)mx=seq;}else{seq=0;} });
+      if(mx>mSeq){mSeq=mx;mNome=r.nome;}
+    });
+    if(mNome&&mSeq>=2) trofeus[mNome].push({icon:'🔗',label:'Maior Sequência',motivo:`${mSeq} resultados seguidos`});
+  }
+
+  // ── Maior placares exatos (apenas ao fim do campeonato) ──
+  if(campeonatoEncerrado()){
+    const top=[...rank].sort((a,b)=>b.placares-a.placares)[0];
+    if(top&&top.placares>0) trofeus[top.nome].push({icon:'🎯',label:'Rei dos Placares',motivo:`${top.placares} placares exatos`});
+  }
+
+  // ── Maior acertos (apenas ao fim do campeonato) ──
+  if(campeonatoEncerrado()){
+    const top=[...rank].sort((a,b)=>b.acertos-a.acertos)[0];
+    if(top&&top.acertos>0) trofeus[top.nome].push({icon:'✅',label:'Rei dos Acertos',motivo:`${top.acertos} resultados corretos`});
+  }
+
+  return trofeus;
 }
 
 // ═══════════════════════════════════════════════════
@@ -1110,14 +1312,24 @@ function renderRanking(){
     body.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">👥</div>Nenhum jogador cadastrado ainda.<br>Vá em <b>Palpites → Jogadores</b> para adicionar.</div></td></tr>`;
     return;
   }
-  body.innerHTML = rank.map((r,i)=>`
-    <tr class="rank-${i+1}">
+  const trofeus = calcTrofeus(rank);
+
+  body.innerHTML = rank.map((r,i)=>{
+    const trofs = trofeus[r.nome]||[];
+    const trофsHtml = trofs.length ? `<div class="trophy-row">${trofs.map(t=>`<span class="trophy">${t.icon} ${t.label}<span class="trophy-tip">${t.motivo}</span></span>`).join('')}</div>` : '';
+    return `<tr class="rank-${i+1}">
       <td class="rank-pos">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
-      <td class="rank-name">${r.nome}<span class="rank-sub">✓ ${r.acertos} acertos · 🎯 ${r.placares} placares</span></td>
+      <td class="rank-name" onclick="openPerfil('${r.nome.replace(/'/g,"\\'")}')">
+        ${r.nome}
+        <span class="rank-sub">✓ ${r.acertos} acertos · 🎯 ${r.placares} placares</span>
+        ${trофsHtml}
+      </td>
       <td class="rank-pts">${r.pts}</td>
       <td><span class="badge-small badge-acerto">✓ ${r.acertos}</span></td>
       <td><span class="badge-small badge-placar">🎯 ${r.placares}</span></td>
-    </tr>`).join('');
+      <td style="font-size:16px;letter-spacing:-2px">${trofs.map(t=>t.icon).join('')||'–'}</td>
+    </tr>`;
+  }).join('');
 
   // Stats strip
   const total = rank.reduce((s,r)=>s+r.pts,0);
@@ -1143,11 +1355,11 @@ function renderConquistas(rank){
 
   // Mais acertos de resultado
   const maisAcertos = [...rank].sort((a,b)=>b.acertos-a.acertos)[0];
-  if(maisAcertos.acertos>0) conquistas.push({icon:'🎯',label:'Mestre dos Resultados',player:maisAcertos.nome,detail:`${maisAcertos.acertos} acertos`});
+  if(maisAcertos.acertos>0) conquistas.push({icon:'⚽',label:'Mestre dos Resultados',player:maisAcertos.nome,detail:`${maisAcertos.acertos} acertos`});
 
   // Mais placares exatos
   const maisPlacares = [...rank].sort((a,b)=>b.placares-a.placares)[0];
-  if(maisPlacares.placares>0) conquistas.push({icon:'⚽',label:'Craque dos Placares',player:maisPlacares.nome,detail:`${maisPlacares.placares} placares exatos`});
+  if(maisPlacares.placares>0) conquistas.push({icon:'🎯',label:'Craque dos Placares',player:maisPlacares.nome,detail:`${maisPlacares.placares} placares exatos`});
 
   // Melhor rodada
   const rodadas = ['r1','r2','r3'];
@@ -1170,7 +1382,7 @@ function renderConquistas(rank){
       return p && acertouPlacar(p.c,p.fo,res.c,res.fo);
     });
     if(acertaram.length===1){
-      conquistas.push({icon:'🦄',label:'Acertou Sozinho',player:acertaram[0].nome,detail:`Placar de ${jogo.c} x ${jogo.fo}`});
+      conquistas.push({icon:'💡',label:'Acertou Sozinho',player:acertaram[0].nome,detail:`Placar de ${jogo.c} x ${jogo.fo}`});
     }
   });
 
@@ -1819,7 +2031,76 @@ function renderAll(){
 // ═══════════════════════════════════════════════════
 
 function closePtsModal(){ document.getElementById('modalPontuacao').classList.remove('open'); }
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closePtsModal(); });
+
+function closePerfil(){ document.getElementById('modalPerfil').classList.remove('open'); }
+
+function openPerfil(nome){
+  const rank = calcRanking();
+  const r = rank.find(x=>x.nome===nome);
+  if(!r) return;
+  const trofeus = calcTrofeus(rank);
+  const meusTrofeus = trofeus[nome]||[];
+
+  document.getElementById('perfilNome').textContent = nome;
+  document.getElementById('perfilPts').textContent = r.pts;
+  document.getElementById('perfilStats').textContent = `✓ ${r.acertos} acertos · 🎯 ${r.placares} placares exatos · 🏆 ${meusTrofeus.length} troféus`;
+
+  const body = document.getElementById('perfilBody');
+  const palpJog = ST.palpites[nome]||{};
+
+  // ── Troféus ──
+  const trofeusHtml = meusTrofeus.length
+    ? meusTrofeus.map(t=>`
+        <div class="perfil-trophy-item">
+          <div class="perfil-trophy-icon">${t.icon}</div>
+          <div><div class="perfil-trophy-name">${t.label}</div><div class="perfil-trophy-reason">${t.motivo}</div></div>
+        </div>`).join('')
+    : '<div style="color:var(--text-muted);font-size:13px">Nenhum troféu conquistado ainda.</div>';
+
+  // ── Palpites agrupados por rodada ──
+  const RODADA_LABELS = {r1:'1ª Rodada',r2:'2ª Rodada',r3:'3ª Rodada',mata:'Mata-Mata'};
+  const cl = buildClassifiedMap();
+  let palpitesHtml = '';
+  ['r1','r2','r3','mata'].forEach(rod=>{
+    const jogosRod = JOGOS_BASE.filter(j=>j.r===rod);
+    const temPalpite = jogosRod.some(j=>{ const p=palpJog[j.id]; return p&&(p.c!==''&&p.c!==null); });
+    if(!temPalpite) return;
+
+    palpitesHtml += `<div class="perfil-section-title">${rod==='r1'?'1ª':rod==='r2'?'2ª':rod==='r3'?'3ª':'⚔️'} ${RODADA_LABELS[rod]}</div>`;
+    jogosRod.forEach(j=>{
+      const p = palpJog[j.id];
+      if(!p||p.c===''||p.c===null) return;
+      const res = ST.resultados[j.id];
+      const hasRes = res&&res.c!==''&&res.c!==null&&res.c!==undefined;
+      const pts = hasRes ? calcPontos(p.c,p.fo,res.c,res.fo) : null;
+      const ptsCls = pts===50?'pts-50':pts>=35?'pts-35':pts>=20?'pts-20':pts>=10?'pts-15':'pts-0';
+      const ptsHtml = pts!==null ? `<span class="palpite-pts ${ptsCls}">+${pts}</span>` : '';
+      let teamC=j.c, teamF=j.fo;
+      if(j.r==='mata'){teamC=resolveTeam(j.c,cl)||j.c; teamF=resolveTeam(j.fo,cl)||j.fo;}
+      const ipC=teamC===j.c&&j.c.match(/^(1º|2º|3º|Venc\.|Perd\.)/);
+      const ipF=teamF===j.fo&&j.fo.match(/^(1º|2º|3º|Venc\.|Perd\.)/);
+      const lC=ipC?`<span style="color:var(--text-muted);font-style:italic;font-size:11px">${j.c}</span>`:f(teamC);
+      const lF=ipF?`<span style="color:var(--text-muted);font-style:italic;font-size:11px">${j.fo}</span>`:f(teamF);
+      const realHtml = hasRes ? `<div class="perfil-jogo-real">Real: ${res.c}–${res.fo}</div>` : '';
+      palpitesHtml += `
+        <div class="perfil-jogo">
+          <div class="perfil-jogo-teams">${lC} <span style="color:var(--text-muted);font-size:11px">vs</span> ${lF}</div>
+          <div class="perfil-jogo-palpite" style="color:${pts===50?'var(--gold)':pts>0?'var(--green)':'var(--text-muted)'}">${p.c}–${p.fo}${ptsHtml}</div>
+          ${realHtml}
+        </div>`;
+    });
+  });
+
+  body.innerHTML = `
+    <div class="perfil-section-title">🏆 Troféus</div>
+    <div class="perfil-trophy-list">${trofeusHtml}</div>
+    <div class="perfil-section-title" style="margin-top:24px">📋 Todos os palpites</div>
+    ${palpitesHtml||'<div style="color:var(--text-muted);font-size:13px">Nenhum palpite registrado.</div>'}
+  `;
+
+  document.getElementById('modalPerfil').classList.add('open');
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closePtsModal(); closePerfil(); } });
 
 document.addEventListener('DOMContentLoaded', async ()=>{
   setupMobileNav();
@@ -1865,6 +2146,25 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       <div class="pts-badge" style="color:var(--red)">0</div>
       <div class="pts-desc"><strong>Palpite errado</strong>Não acertou nenhum critério acima.</div>
     </div>
+  </div>
+</div>
+
+
+<!-- Modal Perfil Jogador -->
+<div class="perfil-overlay" id="modalPerfil" onclick="if(event.target===this)closePerfil()">
+  <div class="perfil-box">
+    <div class="perfil-header">
+      <div>
+        <div class="perfil-nome" id="perfilNome"></div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px" id="perfilStats"></div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div class="perfil-pts" id="perfilPts"></div>
+        <div class="perfil-pts-lbl">pontos</div>
+      </div>
+      <button class="perfil-close" onclick="closePerfil()">✕</button>
+    </div>
+    <div class="perfil-body" id="perfilBody"></div>
   </div>
 </div>
 
