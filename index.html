@@ -1038,13 +1038,10 @@ const JOGOS_BASE = [
 // ═══════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════
-//  SYNC — Google Sheets
+//  SYNC — Google Sheets (granular, sem reescrita total)
 // ═══════════════════════════════════════════════════
 
-let _syncPending = false;
-let _syncTimer = null;
-
-// Carrega do Sheets; fallback para localStorage
+// Carrega do Sheets na inicialização; fallback para localStorage
 async function loadFromSheets() {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'SUA_URL_AQUI') return loadLocalState();
   try {
@@ -1052,7 +1049,7 @@ async function loadFromSheets() {
     const res = await fetch(APPS_SCRIPT_URL + '?action=load&t=' + Date.now());
     const data = await res.json();
     if (!data.jogadores) throw new Error('Resposta inválida do Sheets');
-    ST = { jogadores: data.jogadores || [], palpites: data.palpites || {}, resultados: data.resultados || {} };
+    ST = { jogadores: data.jogadores||[], palpites: data.palpites||{}, resultados: data.resultados||{} };
     localStorage.setItem('bolao2026', JSON.stringify(ST));
     showSyncBadge('ok');
     return ST;
@@ -1069,47 +1066,30 @@ function loadLocalState() {
 
 let ST = loadLocalState();
 
-// Salva localmente + agenda sync para o Sheets (debounce 800ms)
+// Salva apenas no localStorage (sync granular feito por cada operação)
 function save() {
   localStorage.setItem('bolao2026', JSON.stringify(ST));
-  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'SUA_URL_AQUI') return;
-  clearTimeout(_syncTimer);
-  _syncTimer = setTimeout(() => syncToSheets(), 800);
 }
 
-// Envia dados via POST com content-type text/plain
-// (não dispara preflight CORS, diferente de application/json)
-async function sheetsGET(action, params = {}) {
-  // Leitura simples: GET normal
-  const url = APPS_SCRIPT_URL + '?action=' + action + '&t=' + Date.now();
-  const res = await fetch(url);
-  return res.json();
-}
-
+// Primitiva de POST text/plain (sem preflight CORS)
 async function sheetsPOST(action, data = {}) {
-  // Escrita: POST com text/plain para evitar preflight CORS
-  // O Apps Script lê via e.postData.contents
-  const body = JSON.stringify({ action, ...data });
-  const res = await fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body
-  });
-  return res.json();
-}
-
-async function syncToSheets() {
-  if (_syncPending) return;
-  _syncPending = true;
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'SUA_URL_AQUI') return;
   showSyncBadge('saving');
   try {
-    await sheetsPOST('save_all', { data: ST });
+    const body = JSON.stringify({ action, ...data });
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Erro desconhecido');
     showSyncBadge('ok');
+    return json;
   } catch(e) {
     showSyncBadge('error');
-    console.error('Sync falhou:', e);
-  } finally {
-    _syncPending = false;
+    console.error('[Sheets]', action, e);
+    throw e;
   }
 }
 
@@ -1820,22 +1800,35 @@ function renderJogadoresAdmin(){
     </div>`).join('');
 }
 
-function adicionarJogador(){
+async function adicionarJogador(){
   const nome = document.getElementById('novoJogNome').value.trim();
   if(!nome){ toast('Digite um nome.',true); return; }
   if(ST.jogadores.includes(nome)){ toast('Jogador já existe.',true); return; }
   ST.jogadores.push(nome);
   save();
   renderJogadoresAdmin();
-  toast(`${nome} adicionado! 🎉`);
   document.getElementById('novoJogNome').value='';
+  // Apenas appenda a nova linha — não reescreve tudo
+  try {
+    await sheetsPOST('add_jogador', { nome });
+    toast(`${nome} adicionado! 🎉`);
+  } catch(e) {
+    toast(`${nome} salvo localmente (sync offline)`, true);
+  }
 }
 
-function removerJogador(nome){
+async function removerJogador(nome){
   if(!confirm(`Remover ${nome} e todos os seus palpites?`)) return;
   ST.jogadores = ST.jogadores.filter(j=>j!==nome);
   delete ST.palpites[nome];
-  save(); renderJogadoresAdmin(); toast(`${nome} removido.`);
+  save();
+  renderJogadoresAdmin();
+  try {
+    await sheetsPOST('remove_jogador', { nome });
+    toast(`${nome} removido.`);
+  } catch(e) {
+    toast(`${nome} removido localmente (sync offline)`, true);
+  }
 }
 
 function renderPalpiteInputs(){
@@ -1876,18 +1869,33 @@ function renderPalpiteInputs(){
     }).join('');
 }
 
-function salvarPalpites(){
+async function salvarPalpites(){
   const jog = document.getElementById('selJogador').value;
   if(!jog){ toast('Selecione um jogador.',true); return; }
   if(!ST.palpites[jog]) ST.palpites[jog]={};
-  let saved=0;
+
+  // Coleta apenas os palpites visíveis na tela (rodada atual)
+  const alterados = {};
   document.querySelectorAll('[data-jog][data-side]').forEach(inp=>{
     const id = inp.dataset.jog, side = inp.dataset.side;
     const val = inp.value.trim();
     if(!ST.palpites[jog][id]) ST.palpites[jog][id]={c:'',fo:''};
-    if(val!=='') { ST.palpites[jog][id][side]=parseInt(val); saved++; }
+    if(val !== '') {
+      ST.palpites[jog][id][side] = parseInt(val);
+      if(!alterados[id]) alterados[id] = {...ST.palpites[jog][id]};
+      alterados[id][side] = parseInt(val);
+    }
   });
-  save(); toast(`Palpites de ${jog} salvos! ✅`);
+
+  save(); // localStorage imediato
+
+  // POST granular: apenas upsert das linhas alteradas
+  try {
+    await sheetsPOST('upsert_palpites', { jogador: jog, palpites: alterados });
+    toast(`Palpites de ${jog} salvos! ✅`);
+  } catch(e) {
+    toast(`Salvos localmente — sync offline ⚠️`, true);
+  }
 }
 
 
@@ -1959,15 +1967,42 @@ function renderResultadoRow(j){
   </div>`;
 }
 
-function salvarResultados(){
+async function salvarResultados(){
+  const alterados = {};
+
   document.querySelectorAll('[data-res][data-side]').forEach(inp=>{
     const id=inp.dataset.res, side=inp.dataset.side;
     const val=inp.value.trim();
     if(!ST.resultados[id]) ST.resultados[id]={c:'',fo:''};
-    if(val!=='') ST.resultados[id][side]=parseInt(val);
-    else ST.resultados[id][side]='';
+    const parsed = val!=='' ? parseInt(val) : '';
+    ST.resultados[id][side] = parsed;
+    // Marca como alterado se tiver pelo menos um gol preenchido
+    if(val!==''){
+      if(!alterados[id]) alterados[id] = {...ST.resultados[id]};
+      alterados[id][side] = parsed;
+    }
   });
-  save(); renderAll(); toast('Resultados salvos & pontuação recalculada! 🔄');
+
+  // Só envia jogos com ambos os gols preenchidos
+  const completos = {};
+  Object.entries(alterados).forEach(([id,r])=>{
+    if(r.c!=='' && r.fo!=='') completos[id]=r;
+  });
+
+  save();
+  renderAll();
+
+  if(Object.keys(completos).length === 0){
+    toast('Nenhum resultado novo para salvar.', true);
+    return;
+  }
+
+  try {
+    await sheetsPOST('upsert_resultados', { resultados: completos });
+    toast(`${Object.keys(completos).length} resultado(s) salvo(s)! 🔄`);
+  } catch(e) {
+    toast('Salvos localmente — sync offline ⚠️', true);
+  }
 }
 
 // ═══════════════════════════════════════════════════
