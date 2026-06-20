@@ -117,6 +117,11 @@
   .rank-2 .rank-pos { color: #C0C0C0; }
   .rank-3 .rank-pos { color: #CD7F32; }
   .rank-name { font-weight: 600; font-size: 15px; }
+  /* Sub-info abaixo do nome: desktop em linha única, mobile quebra em 2 linhas (ver media query) */
+  .rank-sub { display: block; font-size: 12px; color: var(--text-muted); margin-top: 2px; font-weight: 400; }
+  .rank-sub-line { display: inline; }
+  .rank-sub-line:first-child::after { content: ' · '; color: var(--text-muted); }
+  .rank-streak { color: var(--gold); font-weight: 600; }
   .rank-pts {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 26px; color: var(--green);
@@ -132,25 +137,90 @@
   .badge-acerto { background: rgba(0,200,150,.15); color: var(--green); }
   .badge-placar { background: rgba(255,215,0,.12); color: var(--gold); }
 
-  /* ── CONQUISTAS ── */
+  /* ── CONQUISTAS (mural) ── */
+  .mural-lider {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px;
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 14px;
+  }
+  .mural-lider::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,215,0,.08), transparent);
+    pointer-events: none;
+  }
+  .mural-lider-icon { font-size: 40px; }
+  .mural-lider-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+  .mural-lider-player { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--gold); letter-spacing: 1px; }
+  .mural-lider-detail { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
   .conquistas-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
-    gap: 14px;
+    display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 28px;
   }
   .conquista-card {
     background: var(--card); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 16px;
-    position: relative; overflow: hidden;
+    border-radius: var(--radius-sm); padding: 14px 18px; min-width: 130px;
+    position: relative; overflow: hidden; flex: 1;
   }
   .conquista-card::before {
     content: ''; position: absolute; inset: 0;
     background: linear-gradient(135deg, rgba(255,215,0,.04), transparent);
     pointer-events: none;
   }
-  .conquista-icon { font-size: 28px; margin-bottom: 8px; }
+  .conquista-icon { font-size: 22px; margin-bottom: 4px; }
   .conquista-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
-  .conquista-player { font-weight: 700; font-size: 15px; color: var(--gold); }
+  .conquista-player { font-family: 'Bebas Neue', sans-serif; font-weight: 700; font-size: 20px; color: var(--gold); margin-top: 2px; }
   .conquista-detail { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── Seções por rodada (pódio) ── */
+  .rodadas-section-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px;
+    color: var(--text-muted); margin: 8px 0 16px;
+  }
+  .rodadas-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px; margin-bottom: 28px;
+  }
+  .rodada-podio {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px; display: flex;
+    flex-direction: column; gap: 8px;
+  }
+  .rodada-podio-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 1px;
+    color: var(--gold); margin-bottom: 4px;
+  }
+  .podio-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; border-radius: var(--radius-sm);
+    background: var(--navy-light); font-size: 13px;
+  }
+  .podio-medal { font-size: 16px; flex-shrink: 0; }
+  .podio-name { font-weight: 600; flex: 1; }
+  .podio-pts { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--green); }
+  .podio-1 { border: 1px solid rgba(255,215,0,.3); }
+  .podio-2 { border: 1px solid rgba(192,192,192,.25); }
+  .podio-3 { border: 1px solid rgba(205,127,50,.25); }
+  .podio-empty { color: var(--text-muted); font-size: 12px; padding: 7px 10px; }
+
+  /* ── Tabela "Acertou Sozinho" ── */
+  .sozinho-table { width: 100%; border-collapse: collapse; }
+  .sozinho-table thead th {
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-muted); padding: 8px 12px; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .sozinho-table tbody tr { border-bottom: 1px solid var(--border); }
+  .sozinho-table tbody tr:last-child { border-bottom: none; }
+  .sozinho-table tbody td { padding: 10px 12px; font-size: 13px; }
+  .sozinho-player { font-weight: 700; color: var(--gold); }
+  .sozinho-rodada { color: var(--text-muted); font-size: 12px; }
+  .sozinho-placar {
+    display: inline-block; background: #000; color: #fff;
+    font-family: 'Bebas Neue', sans-serif; font-size: 14px;
+    padding: 2px 10px; border-radius: 4px; letter-spacing: 1px;
+  }
 
   /* ── JOGOS DO DIA ── */
   .day-header {
@@ -220,6 +290,7 @@
     font-size: 18px; letter-spacing: 1px;
   }
   .palpite-pts { font-size: 11px; margin-left: 6px; border-radius: 4px; padding: 1px 5px; font-weight: 700; }
+  .pts-65 { background: #000000; color: #FFFFFF; font-weight: 800; box-shadow: 0 0 0 1px rgba(255,255,255,.25); }
   .pts-50 { background: rgba(255,215,0,.2); color: var(--gold); }
   .pts-35 { background: rgba(0,200,150,.15); color: var(--green); }
   .pts-20 { background: rgba(100,149,237,.15); color: #6495ED; }
@@ -446,8 +517,10 @@
     .ranking-table tbody td { padding: 10px 8px; font-size: 13px; }
     .rank-pts { font-size: 22px; }
     .rank-name { font-size: 14px; }
-    /* Sub-info linha abaixo do nome via data-attrs */
+    /* Sub-info abaixo do nome: no mobile quebra em 2 linhas (acertos+streak / placares) */
     .rank-sub { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; font-weight: 400; }
+    .rank-sub-line { display: block; }
+    .rank-sub-line:first-child::after { content: none; }
 
     /* ── Conquistas: 1 coluna ── */
     .conquistas-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -748,7 +821,10 @@
     <div class="stat-strip" id="statStrip" style="margin-bottom:20px"></div>
 
     <div class="section-title" style="margin-top:8px">🏅 MURAL DE <span>CONQUISTAS</span></div>
+    <div id="muralLider"></div>
     <div class="conquistas-grid" id="conquistasGrid"></div>
+    <div id="muralRodadas"></div>
+    <div id="muralSozinho"></div>
   </div>
 
   <!-- ══ TELA 2: JOGOS DO DIA ══ -->
@@ -1144,6 +1220,34 @@ function calcPontos(palpC, palpF, realC, realF){
   return 0;
 }
 
+// Mapa jogo_id -> true se exatamente 1 jogador acertou o placar exato daquele jogo.
+// Calculado uma vez por render e reutilizado por calcPontosJogo.
+function calcAcertosUnicosMap(){
+  const map = {};
+  JOGOS_BASE.forEach(jogo=>{
+    const res = ST.resultados[jogo.id];
+    if(!res||res.c===''||res.c===null||res.c===undefined) return;
+    let count=0;
+    ST.jogadores.forEach(j=>{
+      const p=(ST.palpites[j]||{})[jogo.id];
+      if(p && acertouPlacar(p.c,p.fo,res.c,res.fo)) count++;
+    });
+    map[jogo.id] = (count===1);
+  });
+  return map;
+}
+
+// Pontos de um palpite considerando o bônus de "Acertou Sozinho" (+65 em vez de +50).
+// unicosMap: resultado de calcAcertosUnicosMap() — opcional, recalculado se omitido.
+function calcPontosJogo(jogoId, palpC, palpF, realC, realF, unicosMap){
+  const pts = calcPontos(palpC, palpF, realC, realF);
+  if(pts === 50){
+    const map = unicosMap || calcAcertosUnicosMap();
+    if(map[jogoId]) return 65;
+  }
+  return pts;
+}
+
 function acertouResultado(palpC, palpF, realC, realF){
   if(realC===null||realC===undefined) return false;
   const pc=+palpC,pf=+palpF,rc=+realC,rf=+realF;
@@ -1163,13 +1267,14 @@ function calcRanking(){
   ST.jogadores.forEach(j=>{
     rank[j] = {nome:j, pts:0, acertos:0, placares:0, ptsPorJogo:{}, ptsPorRodada:{r1:0,r2:0,r3:0,mata:0}};
   });
+  const unicosMap = calcAcertosUnicosMap();
   JOGOS_BASE.forEach(jogo=>{
     const res = ST.resultados[jogo.id];
     if(!res || res.c==='' || res.c===null || res.c===undefined) return;
     ST.jogadores.forEach(j=>{
       const p = (ST.palpites[j]||{})[jogo.id];
       if(!p) return;
-      const pts = calcPontos(p.c, p.fo, res.c, res.fo);
+      const pts = calcPontosJogo(jogo.id, p.c, p.fo, res.c, res.fo, unicosMap);
       rank[j].pts += pts||0;
       rank[j].ptsPorJogo[jogo.id] = pts||0;
       const rod = jogo.r || 'mata';
@@ -1178,6 +1283,24 @@ function calcRanking(){
       if(acertouPlacar(p.c,p.fo,res.c,res.fo)) rank[j].placares++;
     });
   });
+
+  // Sequência ATUAL de acertos (streak corrente, contando do jogo mais recente pra trás)
+  const jogosComRes = JOGOS_BASE.filter(j=>{
+    const r=ST.resultados[j.id]; return r&&r.c!==''&&r.c!==null&&r.c!==undefined;
+  }).sort((a,b)=>a.d.localeCompare(b.d)||a.h.localeCompare(b.h));
+
+  ST.jogadores.forEach(nome=>{
+    let streak=0;
+    for(let i=jogosComRes.length-1; i>=0; i--){
+      const jogo=jogosComRes[i];
+      const p=(ST.palpites[nome]||{})[jogo.id];
+      const res=ST.resultados[jogo.id];
+      if(p && acertouResultado(p.c,p.fo,res.c,res.fo)) streak++;
+      else break;
+    }
+    rank[nome].streakAtual = streak;
+  });
+
   return Object.values(rank).sort((a,b)=>b.pts-a.pts||b.acertos-a.acertos||b.placares-a.placares);
 }
 
@@ -1217,30 +1340,44 @@ function calcTrofeus(rank){
     const r=ST.resultados[j.id]; return r&&r.c!==''&&r.c!==null&&r.c!==undefined;
   }).sort((a,b)=>a.d.localeCompare(b.d)||a.h.localeCompare(b.h));
 
-  // ── Melhor em cada rodada (apenas após encerramento da rodada) ──
-  [['r1','1ª Rodada','🥇'],['r2','2ª Rodada','🥈'],['r3','3ª Rodada','🥉']].forEach(([rod,label,icon])=>{
+  // ── Pódio (🥇🥈🥉) em cada rodada (apenas após encerramento da rodada) ──
+  [['r1','1ª Rodada'],['r2','2ª Rodada'],['r3','3ª Rodada']].forEach(([rod,label])=>{
     if(!rodadaEncerrada(rod)) return;
     const jogosR = JOGOS_BASE.filter(j=>j.r===rod);
-    let best=-1, bestNome='';
-    rank.forEach(r=>{
-      const pts=jogosR.reduce((s,jg)=>s+(r.ptsPorJogo[jg.id]||0),0);
-      if(pts>best){best=pts;bestNome=r.nome;}
+    const ranking = rank
+      .map(r=>({nome:r.nome, pts: jogosR.reduce((s,jg)=>s+(r.ptsPorJogo[jg.id]||0),0)}))
+      .filter(r=>r.pts>0)
+      .sort((a,b)=>b.pts-a.pts)
+      .slice(0,3);
+    const medals = [
+      {icon:'🥇', label:`Campeão da ${label}`},
+      {icon:'🥈', label:`Vice da ${label}`},
+      {icon:'🥉', label:`Terceiro da ${label}`},
+    ];
+    ranking.forEach((r,i)=>{
+      trofeus[r.nome].push({icon:medals[i].icon, label:medals[i].label, motivo:`${r.pts} pts na ${label}`});
     });
-    if(bestNome&&best>0) trofeus[bestNome].push({icon:'🏅',label:`Campeão da ${label}`,motivo:`Melhor pontuação: ${best} pts`});
   });
 
-  // ── Melhor no mata-mata (apenas após fim do campeonato) ──
+  // ── Pódio no mata-mata (🥇🥈🥉, apenas após fim do campeonato) ──
   if(mataMataEncerrado()){
     const jogosMata=JOGOS_BASE.filter(j=>j.r==='mata');
-    let best=-1,bestNome='';
-    rank.forEach(r=>{
-      const pts=jogosMata.reduce((s,jg)=>s+(r.ptsPorJogo[jg.id]||0),0);
-      if(pts>best){best=pts;bestNome=r.nome;}
+    const ranking = rank
+      .map(r=>({nome:r.nome, pts: jogosMata.reduce((s,jg)=>s+(r.ptsPorJogo[jg.id]||0),0)}))
+      .filter(r=>r.pts>0)
+      .sort((a,b)=>b.pts-a.pts)
+      .slice(0,3);
+    const medals = [
+      {icon:'🥇', label:'Rei do Mata-Mata'},
+      {icon:'🥈', label:'Vice do Mata-Mata'},
+      {icon:'🥉', label:'Terceiro do Mata-Mata'},
+    ];
+    ranking.forEach((r,i)=>{
+      trofeus[r.nome].push({icon:medals[i].icon, label:medals[i].label, motivo:`${r.pts} pts no Mata-Mata`});
     });
-    if(bestNome&&best>0) trofeus[bestNome].push({icon:'⚔️',label:'Rei do Mata-Mata',motivo:`Melhor pontuação: ${best} pts`});
   }
 
-  // ── Acertou placar sozinho (tempo real) ──
+  // ── Acertou placar sozinho (tempo real) — agora vale +65 pts ──
   JOGOS_BASE.forEach(jogo=>{
     const res=ST.resultados[jogo.id];
     if(!res||res.c===''||res.c===null||res.c===undefined) return;
@@ -1249,7 +1386,7 @@ function calcTrofeus(rank){
       return p&&acertouPlacar(p.c,p.fo,res.c,res.fo);
     });
     if(acertaram.length===1){
-      trofeus[acertaram[0].nome].push({icon:'💡',label:'Acertou Sozinho',motivo:`Placar exato de ${f(jogo.c)} ${res.c}–${res.fo} ${f(jogo.fo)}`});
+      trofeus[acertaram[0].nome].push({icon:'💡',label:'Acertou Sozinho',motivo:`Placar exato de ${f(jogo.c)} ${res.c}–${res.fo} ${f(jogo.fo)} (+65 pts)`});
     }
   });
 
@@ -1271,7 +1408,7 @@ function calcTrofeus(rank){
       jogosComRes.forEach(jg=>{ const p=(ST.palpites[r.nome]||{})[jg.id]; const res=ST.resultados[jg.id]; if(p&&acertouResultado(p.c,p.fo,res.c,res.fo)){seq++;if(seq>mx)mx=seq;}else{seq=0;} });
       if(mx>mSeq){mSeq=mx;mNome=r.nome;}
     });
-    if(mNome&&mSeq>=2) trofeus[mNome].push({icon:'🔗',label:'Maior Sequência',motivo:`${mSeq} resultados seguidos`});
+    if(mNome&&mSeq>=2) trofeus[mNome].push({icon:'🔥',label:'Maior Sequência',motivo:`${mSeq} resultados seguidos`});
   }
 
   // ── Maior placares exatos (apenas ao fim do campeonato) ──
@@ -1302,17 +1439,31 @@ function calcRankingFiltrado(filtro){
   const rankBase = calcRanking();
   if(filtro === 'geral') return rankBase;
   const jogosRod = JOGOS_BASE.filter(j=>j.r===filtro);
+  const unicosMap = calcAcertosUnicosMap();
+  const jogosRodComRes = jogosRod.filter(j=>{
+    const r=ST.resultados[j.id]; return r&&r.c!==''&&r.c!==null&&r.c!==undefined;
+  }).sort((a,b)=>a.d.localeCompare(b.d)||a.h.localeCompare(b.h));
+
   return rankBase.map(r=>{
     let pts=0, acertos=0, placares=0;
     jogosRod.forEach(j=>{
       const p=(ST.palpites[r.nome]||{})[j.id];
       const res=ST.resultados[j.id];
       if(!p||!res||res.c===''||res.c===null||res.c===undefined) return;
-      pts+=(calcPontos(p.c,p.fo,res.c,res.fo)||0);
+      pts+=(calcPontosJogo(j.id, p.c,p.fo,res.c,res.fo, unicosMap)||0);
       if(acertouResultado(p.c,p.fo,res.c,res.fo)) acertos++;
       if(acertouPlacar(p.c,p.fo,res.c,res.fo)) placares++;
     });
-    return {...r, pts, acertos, placares};
+    // Streak atual dentro da rodada filtrada
+    let streak=0;
+    for(let i=jogosRodComRes.length-1; i>=0; i--){
+      const jogo=jogosRodComRes[i];
+      const p=(ST.palpites[r.nome]||{})[jogo.id];
+      const res=ST.resultados[jogo.id];
+      if(p && acertouResultado(p.c,p.fo,res.c,res.fo)) streak++;
+      else break;
+    }
+    return {...r, pts, acertos, placares, streakAtual: streak};
   }).sort((a,b)=>b.pts-a.pts||b.acertos-a.acertos||b.placares-a.placares);
 }
 
@@ -1328,10 +1479,10 @@ function calcTrofeusFiltrados(rank, filtro){
   const todos = calcTrofeus(rank);
   if(filtro === 'geral') return todos;
   const permitidos = {
-    r1: new Set(['Campeão da 1ª Rodada']),
-    r2: new Set(['Campeão da 2ª Rodada']),
-    r3: new Set(['Campeão da 3ª Rodada']),
-    mata: new Set(['Rei do Mata-Mata','Maior Sequência','Rei dos Placares','Rei dos Acertos']),
+    r1: new Set(['Campeão da 1ª Rodada','Vice da 1ª Rodada','Terceiro da 1ª Rodada']),
+    r2: new Set(['Campeão da 2ª Rodada','Vice da 2ª Rodada','Terceiro da 2ª Rodada']),
+    r3: new Set(['Campeão da 3ª Rodada','Vice da 3ª Rodada','Terceiro da 3ª Rodada']),
+    mata: new Set(['Rei do Mata-Mata','Vice do Mata-Mata','Terceiro do Mata-Mata','Maior Sequência','Rei dos Placares','Rei dos Acertos']),
   }[filtro] || new Set();
   const jogosRod = new Set(JOGOS_BASE.filter(j=>j.r===filtro).map(j=>j.id));
   const filtrado = {};
@@ -1357,22 +1508,28 @@ function renderRanking(){
   }
   const trofeus = calcTrofeusFiltrados(rankCompleto, currentRankFilter);
   body.innerHTML = rank.map((r,i)=>{
-    const trofs = trofeus[r.nome]||[];
-    const trofsHtml = trofs.length
-      ? `<div class="trophy-row">${trofs.map(t=>`<span class="trophy">${t.icon} ${t.label}<span class="trophy-tip">${t.motivo}</span></span>`).join('')}</div>`
+    const todosTrofs = trofeus[r.nome]||[];
+    // Nas tags abaixo do nome, exibe apenas medalhas de colocação na rodada (não "Acertou Sozinho")
+    const trofsTags = todosTrofs.filter(t=>t.label!=='Acertou Sozinho');
+    const trofsHtml = trofsTags.length
+      ? `<div class="trophy-row">${trofsTags.map(t=>`<span class="trophy">${t.icon} ${t.label}<span class="trophy-tip">${t.motivo}</span></span>`).join('')}</div>`
       : '';
     const nomeSafe = r.nome.replace(/'/g,"\'");
+    const streakHtml = (r.streakAtual||0) >= 2 ? ` <span class="rank-streak">🔥 ${r.streakAtual}</span>` : '';
     return `<tr class="rank-${i+1}">
       <td class="rank-pos">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
       <td class="rank-name" onclick="openPerfil('${nomeSafe}','${currentRankFilter}')">
         ${r.nome}
-        <span class="rank-sub">✓ ${r.acertos} acertos · 🎯 ${r.placares} placares</span>
+        <span class="rank-sub">
+          <span class="rank-sub-line">✓ ${r.acertos} acertos${streakHtml}</span>
+          <span class="rank-sub-line">🎯 ${r.placares} placares</span>
+        </span>
         ${trofsHtml}
       </td>
       <td class="rank-pts">${r.pts}</td>
       <td><span class="badge-small badge-acerto">✓ ${r.acertos}</span></td>
       <td><span class="badge-small badge-placar">🎯 ${r.placares}</span></td>
-      <td style="font-size:16px;letter-spacing:-2px">${trofs.map(t=>t.icon).join('')||'–'}</td>
+      <td style="font-size:16px;letter-spacing:-2px">${todosTrofs.map(t=>t.icon).join('')||'–'}</td>
     </tr>`;
   }).join('');
 
@@ -1392,6 +1549,7 @@ function renderRanking(){
   const totalTrofeus=Object.values(calcTrofeusFiltrados(rankCompleto,currentRankFilter)).reduce((s,t)=>s+t.length,0);
   document.getElementById('statStrip').innerHTML = `
     <div class="stat-mini"><div class="val">${finalizados}/${jogosRodada.length}</div><div class="lbl">Jogos finalizados</div></div>
+    <div class="stat-mini"><div class="val">${rank[0]?rank[0].pts:0}</div><div class="lbl">Maior pontuação</div></div>
     <div class="stat-mini"><div class="val">${totalAcertos}</div><div class="lbl">Acertos</div></div>
     <div class="stat-mini"><div class="val">${totalPlacares}</div><div class="lbl">Placares exatos</div></div>
     <div class="stat-mini"><div class="val">${totalTrofeus}</div><div class="lbl">Troféus</div></div>
@@ -1401,35 +1559,107 @@ function renderRanking(){
 
 function renderConquistas(rank){
   const grid = document.getElementById('conquistasGrid');
-  if(!rank.length){ grid.innerHTML='<div class="empty-state"><div class="empty-icon">🏅</div>Conquistas aparecerão conforme os jogos forem sendo registrados.</div>'; return; }
+  const liderBox = document.getElementById('muralLider');
+  const rodadasBox = document.getElementById('muralRodadas');
+  const sozinhoBox = document.getElementById('muralSozinho');
 
-  const conquistas = [];
+  if(!rank.length){
+    liderBox.innerHTML = '';
+    grid.innerHTML='<div class="empty-state"><div class="empty-icon">🏅</div>Conquistas aparecerão conforme os jogos forem sendo registrados.</div>';
+    rodadasBox.innerHTML = '';
+    sozinhoBox.innerHTML = '';
+    return;
+  }
 
-  // Melhor pontuação geral
+  // ── Card grande: Líder do Bolão ──
   const lider = rank[0];
-  conquistas.push({icon:'👑',label:'Líder do Bolão',player:lider.nome,detail:`${lider.pts} pontos`});
+  liderBox.innerHTML = `
+    <div class="mural-lider">
+      <div class="mural-lider-icon">👑</div>
+      <div>
+        <div class="mural-lider-label">Líder do Bolão</div>
+        <div class="mural-lider-player">${lider.nome}</div>
+        <div class="mural-lider-detail">${lider.pts} pontos</div>
+      </div>
+    </div>`;
 
-  // Mais acertos de resultado
+  // ── 3 cards pequenos: Acertos / Placares / Sequência ──
   const maisAcertos = [...rank].sort((a,b)=>b.acertos-a.acertos)[0];
-  if(maisAcertos.acertos>0) conquistas.push({icon:'⚽',label:'Mestre dos Resultados',player:maisAcertos.nome,detail:`${maisAcertos.acertos} acertos`});
-
-  // Mais placares exatos
   const maisPlacares = [...rank].sort((a,b)=>b.placares-a.placares)[0];
-  if(maisPlacares.placares>0) conquistas.push({icon:'🎯',label:'Craque dos Placares',player:maisPlacares.nome,detail:`${maisPlacares.placares} placares exatos`});
 
-  // Melhor rodada
-  const rodadas = ['r1','r2','r3'];
-  rodadas.forEach((rod,ri)=>{
-    const jogosRod = JOGOS_BASE.filter(j=>j.r===rod);
-    let bestPts=0, bestName='';
+  const jogosComResultado = JOGOS_BASE.filter(j=>{
+    const res=ST.resultados[j.id];
+    return res && res.c!=='' && res.c!==null && res.c!==undefined;
+  }).sort((a,b)=>a.d.localeCompare(b.d)||a.h.localeCompare(b.h));
+
+  let melhorSeq=0, melhorNome='—';
+  if(jogosComResultado.length > 0){
     rank.forEach(r=>{
-      const pts = jogosRod.reduce((s,jg)=>s+(r.ptsPorJogo[jg.id]||0),0);
-      if(pts>bestPts){bestPts=pts;bestName=r.nome;}
+      let seq=0, maxSeq=0;
+      jogosComResultado.forEach(jogo=>{
+        const p=(ST.palpites[r.nome]||{})[jogo.id];
+        const res=ST.resultados[jogo.id];
+        if(p && acertouResultado(p.c,p.fo,res.c,res.fo)){ seq++; if(seq>maxSeq) maxSeq=seq; }
+        else { seq=0; }
+      });
+      if(maxSeq>melhorSeq){ melhorSeq=maxSeq; melhorNome=r.nome; }
     });
-    if(bestName&&bestPts>0) conquistas.push({icon:['🔥','⚡','💫'][ri],label:`Melhor na ${ri+1}ª Rodada`,player:bestName,detail:`${bestPts} pontos`});
-  });
+  }
 
-  // Acertou sozinho
+  const cards = [];
+  cards.push({icon:'⚽',label:'Acertos',player:maisAcertos.acertos>0?maisAcertos.nome:'—',detail:maisAcertos.acertos>0?`${maisAcertos.acertos} acertos`:'Sem dados ainda'});
+  cards.push({icon:'🎯',label:'Placares',player:maisPlacares.placares>0?maisPlacares.nome:'—',detail:maisPlacares.placares>0?`${maisPlacares.placares} placares exatos`:'Sem dados ainda'});
+  cards.push({icon:'🔥',label:'Sequência',player:melhorSeq>=2?melhorNome:'—',detail:melhorSeq>=2?`${melhorSeq} acertos seguidos`:'Sem dados ainda'});
+
+  grid.innerHTML = cards.map(c=>`
+    <div class="conquista-card">
+      <div class="conquista-icon">${c.icon}</div>
+      <div class="conquista-label">${c.label}</div>
+      <div class="conquista-player">${c.player}</div>
+      <div class="conquista-detail">${c.detail}</div>
+    </div>`).join('');
+
+  // ── Seções por rodada: pódio 🥇🥈🥉 ──
+  const rodadasMeta = [
+    {key:'r1', label:'1ª Rodada'},
+    {key:'r2', label:'2ª Rodada'},
+    {key:'r3', label:'3ª Rodada'},
+    {key:'mata', label:'Mata-Mata'},
+  ];
+
+  const podiosHtml = rodadasMeta.map(({key,label})=>{
+    const jogosRod = JOGOS_BASE.filter(j=>j.r===key);
+    const ranking = rank
+      .map(r=>({nome:r.nome, pts: jogosRod.reduce((s,jg)=>s+(r.ptsPorJogo[jg.id]||0),0)}))
+      .filter(r=>r.pts>0)
+      .sort((a,b)=>b.pts-a.pts)
+      .slice(0,3);
+
+    const medals = ['🥇','🥈','🥉'];
+    const podioClasses = ['podio-1','podio-2','podio-3'];
+    const itemsHtml = ranking.length
+      ? ranking.map((r,i)=>`
+          <div class="podio-item ${podioClasses[i]}">
+            <span class="podio-medal">${medals[i]}</span>
+            <span class="podio-name">${r.nome}</span>
+            <span class="podio-pts">${r.pts}</span>
+          </div>`).join('')
+      : '<div class="podio-empty">Aguardando resultados...</div>';
+
+    return `
+      <div class="rodada-podio">
+        <div class="rodada-podio-title">${label}</div>
+        ${itemsHtml}
+      </div>`;
+  }).join('');
+
+  rodadasBox.innerHTML = `
+    <div class="rodadas-section-title">📅 RESULTADO DAS RODADAS</div>
+    <div class="rodadas-grid">${podiosHtml}</div>`;
+
+  // ── Tabela: Acertou Sozinho (agora vale +65 pts) ──
+  const sozinhoRows = [];
+  const rodadaLabel = {r1:'1ª Rodada',r2:'2ª Rodada',r3:'3ª Rodada',mata:'Mata-Mata'};
   JOGOS_BASE.forEach(jogo=>{
     const res = ST.resultados[jogo.id];
     if(!res||res.c===''||res.c===null||res.c===undefined) return;
@@ -1438,41 +1668,37 @@ function renderConquistas(rank){
       return p && acertouPlacar(p.c,p.fo,res.c,res.fo);
     });
     if(acertaram.length===1){
-      conquistas.push({icon:'💡',label:'Acertou Sozinho',player:acertaram[0].nome,detail:`Placar de ${jogo.c} x ${jogo.fo}`});
+      sozinhoRows.push({
+        nome: acertaram[0].nome,
+        rodada: rodadaLabel[jogo.r]||jogo.r,
+        placar: `${f(jogo.c)} ${res.c} x ${res.fo} ${f(jogo.fo)}`,
+        data: jogo.d
+      });
     }
   });
+  sozinhoRows.sort((a,b)=>b.data.localeCompare(a.data));
 
-  // Maior sequência de acertos (resultado correto, não precisa ser placar exato)
-  // Percorre jogos em ordem cronológica com resultado registrado
-  const jogosComResultado = JOGOS_BASE.filter(j=>{
-    const res=ST.resultados[j.id];
-    return res && res.c!=='' && res.c!==null && res.c!==undefined;
-  }).sort((a,b)=>a.d.localeCompare(b.d)||a.h.localeCompare(b.h));
-
-  if(jogosComResultado.length > 0){
-    let melhorSeq=0, melhorNome='';
-    rank.forEach(r=>{
-      let seq=0, maxSeq=0;
-      jogosComResultado.forEach(jogo=>{
-        const p=(ST.palpites[r.nome]||{})[jogo.id];
-        const res=ST.resultados[jogo.id];
-        if(p && acertouResultado(p.c,p.fo,res.c,res.fo)){
-          seq++; if(seq>maxSeq) maxSeq=seq;
-        } else { seq=0; }
-      });
-      if(maxSeq>melhorSeq){ melhorSeq=maxSeq; melhorNome=r.nome; }
-    });
-    if(melhorSeq>=2) conquistas.push({icon:'🔗',label:'Maior Sequência',player:melhorNome,detail:`${melhorSeq} acertos seguidos`});
+  if(sozinhoRows.length){
+    sozinhoBox.innerHTML = `
+      <div class="rodadas-section-title">💡 ACERTOS SOZINHOS</div>
+      <div class="card">
+        <table class="sozinho-table">
+          <thead><tr><th>Participante</th><th>Rodada</th><th>Placar</th></tr></thead>
+          <tbody>
+            ${sozinhoRows.map(r=>`
+              <tr>
+                <td class="sozinho-player">${r.nome}</td>
+                <td class="sozinho-rodada">${r.rodada}</td>
+                <td><span class="sozinho-placar">${r.placar}</span></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } else {
+    sozinhoBox.innerHTML = '';
   }
-
-  grid.innerHTML = conquistas.map(c=>`
-    <div class="conquista-card">
-      <div class="conquista-icon">${c.icon}</div>
-      <div class="conquista-label">${c.label}</div>
-      <div class="conquista-player">${c.player}</div>
-      <div class="conquista-detail">${c.detail}</div>
-    </div>`).join('');
 }
+
 
 // ═══════════════════════════════════════════════════
 //  TELA 2: JOGOS
@@ -1553,11 +1779,12 @@ function renderJogoCard(j){
     if(!p||p.c===''||p.c===null) return `<div class="palpite-item"><span class="palpite-name">${jg}</span><span style="color:var(--text-muted);font-size:12px">sem palpite</span></div>`;
     let pts=null, ptsHtml='';
     if(hasResult){
-      pts = calcPontos(p.c,p.fo,res.c,res.fo);
-      const cls = pts>=50?'pts-50':pts>=35?'pts-35':pts>=20?'pts-20':pts>=15?'pts-15':'pts-0';
+      pts = calcPontosJogo(j.id, p.c,p.fo,res.c,res.fo);
+      const cls = pts===65?'pts-65':pts>=50?'pts-50':pts>=35?'pts-35':pts>=20?'pts-20':pts>=15?'pts-15':'pts-0';
       ptsHtml = `<span class="palpite-pts ${cls}">+${pts}</span>`;
     }
-    return `<div class="palpite-item"><span class="palpite-name">${jg}</span><span class="palpite-score" style="color:${pts===50?'var(--gold)':pts>0?'var(--green)':'var(--text-muted)'}">${p.c}–${p.fo}${ptsHtml}</span></div>`;
+    const scoreColor = pts===65?'var(--text)':pts===50?'var(--gold)':pts>0?'var(--green)':'var(--text-muted)';
+    return `<div class="palpite-item"><span class="palpite-name">${jg}</span><span class="palpite-score" style="color:${scoreColor}">${p.c}–${p.fo}${ptsHtml}</span></div>`;
   }).join('');
 
   return `
@@ -2195,8 +2422,8 @@ function openPerfil(nome, filtro){
       if(!p||p.c===''||p.c===null) return;
       const res = ST.resultados[j.id];
       const hasRes = res&&res.c!==''&&res.c!==null&&res.c!==undefined;
-      const pts = hasRes ? calcPontos(p.c,p.fo,res.c,res.fo) : null;
-      const ptsCls = pts===50?'pts-50':pts>=35?'pts-35':pts>=20?'pts-20':pts>=10?'pts-15':'pts-0';
+      const pts = hasRes ? calcPontosJogo(j.id, p.c,p.fo,res.c,res.fo) : null;
+      const ptsCls = pts===65?'pts-65':pts===50?'pts-50':pts>=35?'pts-35':pts>=20?'pts-20':pts>=10?'pts-15':'pts-0';
       const ptsHtml = pts!==null ? `<span class="palpite-pts ${ptsCls}">+${pts}</span>` : '';
       let teamC=j.c, teamF=j.fo;
       if(j.r==='mata'){teamC=resolveTeam(j.c,cl)||j.c; teamF=resolveTeam(j.fo,cl)||j.fo;}
@@ -2205,10 +2432,11 @@ function openPerfil(nome, filtro){
       const lC=ipC?`<span style="color:var(--text-muted);font-style:italic;font-size:11px">${j.c}</span>`:f(teamC);
       const lF=ipF?`<span style="color:var(--text-muted);font-style:italic;font-size:11px">${j.fo}</span>`:f(teamF);
       const realHtml = hasRes ? `<div class="perfil-jogo-real">Real: ${res.c}–${res.fo}</div>` : '';
+      const scoreColor = pts===65?'var(--text)':pts===50?'var(--gold)':pts>0?'var(--green)':'var(--text-muted)';
       palpitesHtml += `
         <div class="perfil-jogo">
           <div class="perfil-jogo-teams">${lC} <span style="color:var(--text-muted);font-size:11px">vs</span> ${lF}</div>
-          <div class="perfil-jogo-palpite" style="color:${pts===50?'var(--gold)':pts>0?'var(--green)':'var(--text-muted)'}">${p.c}–${p.fo}${ptsHtml}</div>
+          <div class="perfil-jogo-palpite" style="color:${scoreColor}">${p.c}–${p.fo}${ptsHtml}</div>
           ${realHtml}
         </div>`;
     });
