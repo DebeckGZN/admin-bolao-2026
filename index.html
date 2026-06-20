@@ -117,6 +117,11 @@
   .rank-2 .rank-pos { color: #C0C0C0; }
   .rank-3 .rank-pos { color: #CD7F32; }
   .rank-name { font-weight: 600; font-size: 15px; }
+  /* Sub-info abaixo do nome: desktop em linha única, mobile quebra em 2 linhas (ver media query) */
+  .rank-sub { display: block; font-size: 12px; color: var(--text-muted); margin-top: 2px; font-weight: 400; }
+  .rank-sub-line { display: inline; }
+  .rank-sub-line:first-child::after { content: ' · '; color: var(--text-muted); }
+  .rank-streak { color: var(--gold); font-weight: 600; }
   .rank-pts {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 26px; color: var(--green);
@@ -512,8 +517,10 @@
     .ranking-table tbody td { padding: 10px 8px; font-size: 13px; }
     .rank-pts { font-size: 22px; }
     .rank-name { font-size: 14px; }
-    /* Sub-info linha abaixo do nome via data-attrs */
+    /* Sub-info abaixo do nome: no mobile quebra em 2 linhas (acertos+streak / placares) */
     .rank-sub { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; font-weight: 400; }
+    .rank-sub-line { display: block; }
+    .rank-sub-line:first-child::after { content: none; }
 
     /* ── Conquistas: 1 coluna ── */
     .conquistas-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -1401,7 +1408,7 @@ function calcTrofeus(rank){
       jogosComRes.forEach(jg=>{ const p=(ST.palpites[r.nome]||{})[jg.id]; const res=ST.resultados[jg.id]; if(p&&acertouResultado(p.c,p.fo,res.c,res.fo)){seq++;if(seq>mx)mx=seq;}else{seq=0;} });
       if(mx>mSeq){mSeq=mx;mNome=r.nome;}
     });
-    if(mNome&&mSeq>=2) trofeus[mNome].push({icon:'🔗',label:'Maior Sequência',motivo:`${mSeq} resultados seguidos`});
+    if(mNome&&mSeq>=2) trofeus[mNome].push({icon:'🔥',label:'Maior Sequência',motivo:`${mSeq} resultados seguidos`});
   }
 
   // ── Maior placares exatos (apenas ao fim do campeonato) ──
@@ -1501,17 +1508,21 @@ function renderRanking(){
   }
   const trofeus = calcTrofeusFiltrados(rankCompleto, currentRankFilter);
   body.innerHTML = rank.map((r,i)=>{
-    const trofs = trofeus[r.nome]||[];
+    // No ranking, exibe apenas medalhas de colocação na rodada (não "Acertou Sozinho")
+    const trofs = (trofeus[r.nome]||[]).filter(t=>t.label!=='Acertou Sozinho');
     const trofsHtml = trofs.length
       ? `<div class="trophy-row">${trofs.map(t=>`<span class="trophy">${t.icon} ${t.label}<span class="trophy-tip">${t.motivo}</span></span>`).join('')}</div>`
       : '';
     const nomeSafe = r.nome.replace(/'/g,"\'");
-    const streakHtml = (r.streakAtual||0) >= 2 ? ` · 🔥 ${r.streakAtual}` : '';
+    const streakHtml = (r.streakAtual||0) >= 2 ? ` <span class="rank-streak">🔥 ${r.streakAtual}</span>` : '';
     return `<tr class="rank-${i+1}">
       <td class="rank-pos">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
       <td class="rank-name" onclick="openPerfil('${nomeSafe}','${currentRankFilter}')">
         ${r.nome}
-        <span class="rank-sub">✓ ${r.acertos} acertos · 🎯 ${r.placares} placares${streakHtml}</span>
+        <span class="rank-sub">
+          <span class="rank-sub-line">✓ ${r.acertos} acertos${streakHtml}</span>
+          <span class="rank-sub-line">🎯 ${r.placares} placares</span>
+        </span>
         ${trofsHtml}
       </td>
       <td class="rank-pts">${r.pts}</td>
@@ -1597,7 +1608,7 @@ function renderConquistas(rank){
   const cards = [];
   cards.push({icon:'⚽',label:'Acertos',player:maisAcertos.acertos>0?maisAcertos.nome:'—',detail:maisAcertos.acertos>0?`${maisAcertos.acertos} acertos`:'Sem dados ainda'});
   cards.push({icon:'🎯',label:'Placares',player:maisPlacares.placares>0?maisPlacares.nome:'—',detail:maisPlacares.placares>0?`${maisPlacares.placares} placares exatos`:'Sem dados ainda'});
-  cards.push({icon:'🔗',label:'Sequência',player:melhorSeq>=2?melhorNome:'—',detail:melhorSeq>=2?`${melhorSeq} acertos seguidos`:'Sem dados ainda'});
+  cards.push({icon:'🔥',label:'Sequência',player:melhorSeq>=2?melhorNome:'—',detail:melhorSeq>=2?`${melhorSeq} acertos seguidos`:'Sem dados ainda'});
 
   grid.innerHTML = cards.map(c=>`
     <div class="conquista-card">
