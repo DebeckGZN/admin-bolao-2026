@@ -2831,13 +2831,16 @@ function renderPalpiteInputs(){
       const dateLabel = new Date(j.d+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
       const isMata = j.r==='mata';
 
-      // Nomes reais para exibir no seletor de pênaltis (resolve placeholders quando possível)
+      // Nomes reais para exibir no jogo (resolve placeholders quando possível)
       let teamCName = j.c, teamFName = j.fo;
+      let isPhC = false, isPhF = false;
       if(isMata && clTeams){
         const rc = resolveTeam(j.c, clTeams), rf = resolveTeam(j.fo, clTeams);
-        if(rc && !rc.match(/^(1º|2º|3º|Venc\.|Perd\.)/)) teamCName = rc;
-        if(rf && !rf.match(/^(1º|2º|3º|Venc\.|Perd\.)/)) teamFName = rf;
+        if(rc && !rc.match(/^(1º|2º|3º|Venc\.|Perd\.)/)) teamCName = rc; else isPhC = true;
+        if(rf && !rf.match(/^(1º|2º|3º|Venc\.|Perd\.)/)) teamFName = rf; else isPhF = true;
       }
+      const teamCLabel = isPhC ? `<span style="color:var(--text-muted);font-style:italic;font-size:11px">${j.c}</span>` : f(teamCName);
+      const teamFLabel = isPhF ? `<span style="color:var(--text-muted);font-style:italic;font-size:11px">${j.fo}</span>` : f(teamFName);
 
       // Mostra o seletor de pênaltis sempre que o palpite atual for empate (em jogos de mata-mata)
       const palpC = p.c!==undefined&&p.c!=='' ? p.c : '';
@@ -2856,18 +2859,18 @@ function renderPalpiteInputs(){
       return `<div class="jogo-palpite-row">
         <div class="jogo-palpite-header">
           <span style="color:var(--text-muted)">${dateLabel} ${j.h}</span>
-          <span>${f(j.c)}</span><span style="color:var(--text-muted)">vs</span><span>${f(j.fo)}</span>
+          <span>${teamCLabel}</span><span style="color:var(--text-muted)">vs</span><span>${teamFLabel}</span>
           ${j.g && j.g!=='-'?`<span style="color:var(--text-muted);font-size:11px">Grupo ${j.g}</span>`:''}
           ${isMata?'<span style="font-size:11px;color:var(--text-muted)">⚔️ Mata-Mata</span>':''}
         </div>
         <div class="score-input-group">
-          <span>${j.c}</span>
+          <span>${isPhC?j.c:teamCName}</span>
           <div class="mini-inputs">
             <input type="number" min="0" max="20" value="${palpC}" data-jog="${j.id}" data-side="c" placeholder="–" ${isMata?`onchange="togglePenSelector('${j.id}')"`:''}>
             <span class="score-vs">x</span>
             <input type="number" min="0" max="20" value="${palpF}" data-jog="${j.id}" data-side="fo" placeholder="–" ${isMata?`onchange="togglePenSelector('${j.id}')"`:''}>
           </div>
-          <span style="text-align:right">${j.fo}</span>
+          <span style="text-align:right">${isPhF?j.fo:teamFName}</span>
         </div>
         ${penHtml}
       </div>`;
