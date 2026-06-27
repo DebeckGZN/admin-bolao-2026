@@ -222,6 +222,94 @@
     padding: 2px 10px; border-radius: 4px; letter-spacing: 1px;
   }
 
+  /* ── NOVO CHAVEAMENTO (árvore completa estilo torneio) ── */
+  .bracket-v2-header {
+    display: flex; align-items: center; justify-content: center;
+    gap: 16px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .bracket-v2-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 3px;
+    color: var(--gold); text-align: center;
+  }
+
+  .bracket-v2-scroll {
+    overflow-x: auto; padding-bottom: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .bracket-v2-tree { min-width: 1400px; }
+
+  .bracket-v2-headers {
+    display: grid; grid-template-columns: repeat(4, 150px) 170px repeat(4, 150px);
+    gap: 14px; margin-bottom: 14px;
+  }
+  .bracket-v2-head {
+    font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 1.5px;
+    color: var(--text-muted); text-align: center; padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .bracket-v2-grid {
+    display: grid; grid-template-columns: repeat(4, 150px) 170px repeat(4, 150px);
+    gap: 14px; align-items: center;
+  }
+
+  .bracket-v2-col {
+    display: flex; flex-direction: column; justify-content: space-around;
+    height: 100%; gap: 10px;
+  }
+  /* Espaçamento progressivo: colunas mais à direita/centro têm cards mais espaçados,
+     simulando a convergência visual de uma árvore de eliminação */
+  .col-r2 .bracket-v2-card { margin: 4px 0; }
+  .col-oi .bracket-v2-card { margin: 24px 0; }
+  .col-qf .bracket-v2-card { margin: 72px 0; }
+  .col-sf .bracket-v2-card { margin: 168px 0; }
+  .col-final .bracket-v2-card { margin: 0; }
+
+  .bracket-v2-card {
+    background: var(--navy-light); border-radius: var(--radius-sm);
+    overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,.3);
+    position: relative; flex-shrink: 0;
+  }
+  .col-final .bracket-v2-card {
+    background: linear-gradient(135deg, rgba(255,215,0,.12), var(--navy-light));
+    border: 1px solid rgba(255,215,0,.35);
+  }
+
+  /* Conectores horizontais saindo de cada card em direção ao centro */
+  .bracket-v2-col:not(.col-final) .bracket-v2-card::after {
+    content: ''; position: absolute; top: 50%; width: 14px; height: 2px;
+    background: var(--gold-dim); opacity: .5;
+  }
+  .bracket-v2-grid > .bracket-v2-col:nth-child(-n+4) .bracket-v2-card::after { right: -14px; }
+  .bracket-v2-grid > .bracket-v2-col:nth-child(n+6) .bracket-v2-card::after { left: -14px; }
+
+  .bracket-v2-row {
+    display: flex; align-items: center; padding: 8px 10px; gap: 8px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .bracket-v2-row:last-child { border-bottom: none; }
+  .bracket-v2-row.winner { background: rgba(0,200,150,.1); }
+  .bracket-v2-flag { font-size: 16px; flex-shrink: 0; }
+  .bracket-v2-name {
+    flex: 1; font-size: 11px; font-weight: 600; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .bracket-v2-name.placeholder { color: var(--text-muted); font-style: italic; font-weight: 400; font-size: 10px; }
+  .bracket-v2-score {
+    font-family: 'Bebas Neue', sans-serif; font-size: 17px; color: var(--text-muted);
+    min-width: 18px; text-align: center;
+  }
+  .bracket-v2-score.winner { color: var(--green); }
+  .bracket-v2-pen {
+    font-size: 8px; color: var(--gold); margin-left: 1px; font-weight: 700;
+  }
+
+  @media (max-width: 768px) {
+    .bracket-v2-title { font-size: 20px; }
+    .bracket-v2-tree { min-width: 1300px; }
+  }
+
   /* ── JOGOS DO DIA ── */
   .day-header {
     font-family: 'Bebas Neue', sans-serif;
@@ -859,7 +947,12 @@
     </div>
 
     <div id="tab-bracket" class="tab-content">
-      <div id="bracketContainer"></div>
+      <div class="bracket-v2-header">
+        <div class="bracket-v2-title">⚽ CHAVEAMENTO</div>
+      </div>
+      <div class="bracket-v2-scroll">
+        <div id="bracketContainer"></div>
+      </div>
     </div>
   </div>
 
@@ -1201,23 +1294,30 @@ function toast(msg, err=false){
 //  PONTUAÇÃO
 // ═══════════════════════════════════════════════════
 
-function calcPontos(palpC, palpF, realC, realF){
+function calcPontos(palpC, palpF, realC, realF, palpPen, realPen){
   if(realC===null || realC===undefined) return null;
   const pc=+palpC, pf=+palpF, rc=+realC, rf=+realF;
   if(isNaN(pc)||isNaN(pf)) return 0;
+  let pts = 0;
   // Placar exato
-  if(pc===rc && pf===rf) return 50;
-  const pVenc = pc>pf?'c':pc<pf?'f':'e';
-  const rVenc = rc>rf?'c':rc<rf?'f':'e';
-  const acertouVenc = pVenc===rVenc;
-  const acertouGolsC = pc===rc;
-  const acertouGolsF = pf===rf;
-  if(acertouVenc && (acertouGolsC||acertouGolsF)) return 35;
-  if(acertouVenc) return 20;
-  // Empate correto mas placar errado -> já coberto acima (pVenc=e=rVenc)
-  // Gols da seleção perdedora
-  if(!acertouVenc && (acertouGolsC||acertouGolsF)) return 10;
-  return 0;
+  if(pc===rc && pf===rf) pts = 50;
+  else {
+    const pVenc = pc>pf?'c':pc<pf?'f':'e';
+    const rVenc = rc>rf?'c':rc<rf?'f':'e';
+    const acertouVenc = pVenc===rVenc;
+    const acertouGolsC = pc===rc;
+    const acertouGolsF = pf===rf;
+    if(acertouVenc && (acertouGolsC||acertouGolsF)) pts = 35;
+    else if(acertouVenc) pts = 20;
+    // Gols da seleção perdedora
+    else if(!acertouVenc && (acertouGolsC||acertouGolsF)) pts = 10;
+  }
+  // Bônus de mata-mata: empate real decidido nos pênaltis — se o jogador
+  // também palpitou empate e acertou quem vence a disputa, +15 pts extra.
+  if(rc===rf && pc===pf && palpPen && realPen && palpPen===realPen){
+    pts += 15;
+  }
+  return pts;
 }
 
 // Mapa jogo_id -> true se exatamente 1 jogador acertou o placar exato daquele jogo.
@@ -1237,13 +1337,14 @@ function calcAcertosUnicosMap(){
   return map;
 }
 
-// Pontos de um palpite considerando o bônus de "Acertou Sozinho" (+65 em vez de +50).
+// Pontos de um palpite considerando o bônus de "Acertou Sozinho" (+65 em vez de +50)
+// e o bônus de pênaltis no mata-mata (+15 se acertou quem vence o empate).
 // unicosMap: resultado de calcAcertosUnicosMap() — opcional, recalculado se omitido.
-function calcPontosJogo(jogoId, palpC, palpF, realC, realF, unicosMap){
-  const pts = calcPontos(palpC, palpF, realC, realF);
-  if(pts === 50){
+function calcPontosJogo(jogoId, palpC, palpF, realC, realF, unicosMap, palpPen, realPen){
+  const pts = calcPontos(palpC, palpF, realC, realF, palpPen, realPen);
+  if(pts !== null && pts >= 50 && pts < 65){
     const map = unicosMap || calcAcertosUnicosMap();
-    if(map[jogoId]) return 65;
+    if(map[jogoId]) return pts - 50 + 65; // preserva bônus de pênalti se houver
   }
   return pts;
 }
@@ -1274,7 +1375,7 @@ function calcRanking(){
     ST.jogadores.forEach(j=>{
       const p = (ST.palpites[j]||{})[jogo.id];
       if(!p) return;
-      const pts = calcPontosJogo(jogo.id, p.c, p.fo, res.c, res.fo, unicosMap);
+      const pts = calcPontosJogo(jogo.id, p.c, p.fo, res.c, res.fo, unicosMap, p.pen, res.pen);
       rank[j].pts += pts||0;
       rank[j].ptsPorJogo[jogo.id] = pts||0;
       const rod = jogo.r || 'mata';
@@ -1450,7 +1551,7 @@ function calcRankingFiltrado(filtro){
       const p=(ST.palpites[r.nome]||{})[j.id];
       const res=ST.resultados[j.id];
       if(!p||!res||res.c===''||res.c===null||res.c===undefined) return;
-      pts+=(calcPontosJogo(j.id, p.c,p.fo,res.c,res.fo, unicosMap)||0);
+      pts+=(calcPontosJogo(j.id, p.c,p.fo,res.c,res.fo, unicosMap, p.pen, res.pen)||0);
       if(acertouResultado(p.c,p.fo,res.c,res.fo)) acertos++;
       if(acertouPlacar(p.c,p.fo,res.c,res.fo)) placares++;
     });
@@ -1510,7 +1611,7 @@ function renderRanking(){
   body.innerHTML = rank.map((r,i)=>{
     const todosTrofs = trofeus[r.nome]||[];
     // Nas tags abaixo do nome, exibe apenas medalhas de colocação na rodada (não "Acertou Sozinho")
-    const trofsTags = todosTrofs.filter(t=>t.label!=='Acertou Sozinho');
+    const trofsTags = todosTrofs.filter(t=>t.label!=='Acertou Sozinho' && t.label!=='1500 Pontos' && t.label!=='2500 Pontos');
     const trofsHtml = trofsTags.length
       ? `<div class="trophy-row">${trofsTags.map(t=>`<span class="trophy">${t.icon} ${t.label}<span class="trophy-tip">${t.motivo}</span></span>`).join('')}</div>`
       : '';
@@ -1779,7 +1880,7 @@ function renderJogoCard(j){
     if(!p||p.c===''||p.c===null) return `<div class="palpite-item"><span class="palpite-name">${jg}</span><span style="color:var(--text-muted);font-size:12px">sem palpite</span></div>`;
     let pts=null, ptsHtml='';
     if(hasResult){
-      pts = calcPontosJogo(j.id, p.c,p.fo,res.c,res.fo);
+      pts = calcPontosJogo(j.id, p.c,p.fo,res.c,res.fo, null, p.pen, res.pen);
       const cls = pts===65?'pts-65':pts>=50?'pts-50':pts>=35?'pts-35':pts>=20?'pts-20':pts>=15?'pts-15':'pts-0';
       ptsHtml = `<span class="palpite-pts ${cls}">+${pts}</span>`;
     }
@@ -2561,67 +2662,92 @@ function renderGrupos(){
   }).join('');
 }
 
+// Árvore de progressão do mata-mata: cada item liga o jogo da 2ª Fase
+// inicial até a Final, dividido nas duas metades do chaveamento (esquerda/direita).
+// Estrutura: [ [jogo2faseA, jogo2faseB] -> oitavas -> quartas ] de cada lado -> semi -> final
+const BRACKET_TREE = {
+  left: [
+    { r2: ['sf_01','sf_02'], oi: 'oi_01' },
+    { r2: ['sf_03','sf_04'], oi: 'oi_02' },
+    { r2: ['sf_05','sf_06'], oi: 'oi_03' },
+    { r2: ['sf_07','sf_08'], oi: 'oi_04' },
+  ],
+  right: [
+    { r2: ['sf_09','sf_10'], oi: 'oi_05' },
+    { r2: ['sf_11','sf_12'], oi: 'oi_06' },
+    { r2: ['sf_13','sf_14'], oi: 'oi_07' },
+    { r2: ['sf_15','sf_16'], oi: 'oi_08' },
+  ],
+  qfLeft: ['qf_01','qf_02'],
+  qfRight: ['qf_03','qf_04'],
+  semiLeft: 'semi_01',
+  semiRight: 'semi_02',
+  final: 'final_01',
+};
+
+function jogoById(id){ return JOGOS_BASE.find(j=>j.id===id); }
+
+// Renderiza um card compacto de confronto (bandeira + nome + placar) para uma coluna do bracket
+function bracketCardHtml(jogoId, cl, compact){
+  const j = jogoById(jogoId);
+  if(!j) return '<div class="bracket-v2-card bracket-v2-empty"></div>';
+  const res = ST.resultados[j.id];
+  const hasRes = res && res.c!=='' && res.c!==null && res.c!==undefined;
+  const teamC = resolveTeam(j.c, cl);
+  const teamF = resolveTeam(j.fo, cl);
+  const isPhC = teamC===j.c && j.c.match(/^(1º|2º|3º|Venc\.|Perd\.)/);
+  const isPhF = teamF===j.fo && j.fo.match(/^(1º|2º|3º|Venc\.|Perd\.)/);
+  const isEmpate = hasRes && +res.c === +res.fo;
+  const winC = hasRes && (+res.c > +res.fo || (isEmpate && res.pen==='c'));
+  const winF = hasRes && (+res.fo > +res.c || (isEmpate && res.pen==='fo'));
+
+  const rowC = `<div class="bracket-v2-row ${winC?'winner':''}">
+    <span class="bracket-v2-flag">${isPhC?'❔':(FLAG[teamC]||'⚽')}</span>
+    <span class="bracket-v2-name ${isPhC?'placeholder':''}">${isPhC?'?':teamC}</span>
+    <span class="bracket-v2-score ${winC?'winner':''}">${hasRes?res.c:'–'}</span>
+    ${isEmpate&&res.pen==='c'?'<span class="bracket-v2-pen">P</span>':''}
+  </div>`;
+  const rowF = `<div class="bracket-v2-row ${winF?'winner':''}">
+    <span class="bracket-v2-flag">${isPhF?'❔':(FLAG[teamF]||'⚽')}</span>
+    <span class="bracket-v2-name ${isPhF?'placeholder':''}">${isPhF?'?':teamF}</span>
+    <span class="bracket-v2-score ${winF?'winner':''}">${hasRes?res.fo:'–'}</span>
+    ${isEmpate&&res.pen==='fo'?'<span class="bracket-v2-pen">P</span>':''}
+  </div>`;
+
+  return `<div class="bracket-v2-card" data-jogo="${j.id}" title="${j.h}">${rowC}${rowF}</div>`;
+}
+
 function renderBracket(){
   const bc = document.getElementById('bracketContainer');
   const cl = buildClassifiedMap();
 
-  // Helper: resolve a raw team name to display string (flag + name or placeholder styled)
-  function rd(raw){
-    const resolved = resolveTeam(raw, cl);
-    if(resolved === raw && raw.match(/^(1º|2º|3º|Venc\.|Perd\.)/)){
-      // Still a placeholder — show dimmed
-      return `<span style="color:var(--text-muted);font-style:italic;font-size:12px">${raw}</span>`;
-    }
-    return f(resolved);
+  function col(ids, colClass){
+    return `<div class="bracket-v2-col ${colClass}">${ids.map(id=>bracketCardHtml(id, cl)).join('')}</div>`;
   }
 
-  // Group mata games by fase
-  const byFase = {};
-  JOGOS_BASE.filter(j=>j.r==='mata').forEach(j=>{
-    if(!byFase[j.fase]) byFase[j.fase]=[];
-    byFase[j.fase].push(j);
-  });
+  const leftR2  = col(BRACKET_TREE.left.flatMap(x=>x.r2), 'col-r2');
+  const leftOi  = col(BRACKET_TREE.left.map(x=>x.oi), 'col-oi');
+  const leftQf  = col(BRACKET_TREE.qfLeft, 'col-qf');
+  const leftSf  = col([BRACKET_TREE.semiLeft], 'col-sf');
 
-  const faseOrder = ['2ª Fase','Oitavas','Quartas de Final','Semifinal','3º Lugar','Final'];
-  const faseIcons = {'2ª Fase':'🏟️','Oitavas':'⚔️','Quartas de Final':'🔥','Semifinal':'💥','3º Lugar':'🥉','Final':'🏆'};
-  const faseDates = {'2ª Fase':'28 Jun – 3 Jul','Oitavas':'4–7 Jul','Quartas de Final':'9–11 Jul','Semifinal':'14–15 Jul','3º Lugar':'18 Jul','Final':'19 Jul'};
+  const rightR2 = col(BRACKET_TREE.right.flatMap(x=>x.r2), 'col-r2');
+  const rightOi = col(BRACKET_TREE.right.map(x=>x.oi), 'col-oi');
+  const rightQf = col(BRACKET_TREE.qfRight, 'col-qf');
+  const rightSf = col([BRACKET_TREE.semiRight], 'col-sf');
 
-  bc.innerHTML = faseOrder.filter(fa=>byFase[fa]).map(fa=>{
-    const jogos = byFase[fa];
-    const cards = jogos.map(j=>{
-      const res = ST.resultados[j.id];
-      const hasRes = res && res.c!=='' && res.c!==null && res.c!==undefined;
-      const teamC = resolveTeam(j.c, cl);
-      const teamF = resolveTeam(j.fo, cl);
-      const isPlaceholderC = teamC===j.c && j.c.match(/^(1º|2º|3º|Venc\.|Perd\.)/);
-      const isPlaceholderF = teamF===j.fo && j.fo.match(/^(1º|2º|3º|Venc\.|Perd\.)/);
-      const winC = hasRes && +res.c > +res.fo;
-      const winF = hasRes && +res.fo > +res.c;
-      const dateLabel = new Date(j.d+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+  const finalCol = `<div class="bracket-v2-col col-final">${bracketCardHtml(BRACKET_TREE.final, cl)}</div>`;
 
-      const teamRowC = `<div class="bracket-team ${winC?'winner':''}">
-        <span>${isPlaceholderC?`<span style="color:var(--text-muted);font-style:italic;font-size:11px">${j.c}</span>`:f(teamC)}</span>
-        <span class="bracket-score ${winC?'winner':''}">${hasRes?res.c:'–'}</span>
-      </div>`;
-      const teamRowF = `<div class="bracket-team ${winF?'winner':''}">
-        <span>${isPlaceholderF?`<span style="color:var(--text-muted);font-style:italic;font-size:11px">${j.fo}</span>`:f(teamF)}</span>
-        <span class="bracket-score ${winF?'winner':''}">${hasRes?res.fo:'–'}</span>
-      </div>`;
+  const headerLabels = ['2ª FASE','OITAVAS','QUARTAS','SEMI','FINAL','SEMI','QUARTAS','OITAVAS','2ª FASE'];
 
-      return `<div class="bracket-game">
-        <div class="bracket-game-top"><span>${dateLabel} ${j.h}</span></div>
-        ${teamRowC}${teamRowF}
-      </div>`;
-    }).join('');
-
-    return `<div class="bracket-phase">
-      <div class="bracket-phase-title">
-        ${faseIcons[fa]||''} ${fa}
-        <span style="color:var(--text-muted);font-size:13px;font-family:Inter;font-weight:400;margin-left:8px">${faseDates[fa]||''}</span>
+  bc.innerHTML = `
+    <div class="bracket-v2-tree">
+      <div class="bracket-v2-headers">
+        ${headerLabels.map(l=>`<div class="bracket-v2-head">${l}</div>`).join('')}
       </div>
-      <div class="bracket-games">${cards}</div>
+      <div class="bracket-v2-grid">
+        ${leftR2}${leftOi}${leftQf}${leftSf}${finalCol}${rightSf}${rightQf}${rightOi}${rightR2}
+      </div>
     </div>`;
-  }).join('');
 }
 
 // ═══════════════════════════════════════════════════
@@ -2697,27 +2823,66 @@ function renderPalpiteInputs(){
   const palpJog = ST.palpites[jog]||{};
 
   const rodLabel = rod==='proximos'?'Próximos Jogos':rod==='r1'?'1ª Rodada':rod==='r2'?'2ª Rodada':rod==='r3'?'3ª Rodada':'Mata-Mata';
+  const clTeams = jogos.some(j=>j.r==='mata') ? buildClassifiedMap() : null;
+
   container.innerHTML = `<div class="card-title" style="color:var(--text-muted);font-size:14px;margin-bottom:12px">Palpites de <b style="color:var(--text)">${jog}</b> — ${rodLabel}</div>` +
     jogos.map(j=>{
       const p = palpJog[j.id]||{};
       const dateLabel = new Date(j.d+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+      const isMata = j.r==='mata';
+
+      // Nomes reais para exibir no seletor de pênaltis (resolve placeholders quando possível)
+      let teamCName = j.c, teamFName = j.fo;
+      if(isMata && clTeams){
+        const rc = resolveTeam(j.c, clTeams), rf = resolveTeam(j.fo, clTeams);
+        if(rc && !rc.match(/^(1º|2º|3º|Venc\.|Perd\.)/)) teamCName = rc;
+        if(rf && !rf.match(/^(1º|2º|3º|Venc\.|Perd\.)/)) teamFName = rf;
+      }
+
+      // Mostra o seletor de pênaltis sempre que o palpite atual for empate (em jogos de mata-mata)
+      const palpC = p.c!==undefined&&p.c!=='' ? p.c : '';
+      const palpF = p.fo!==undefined&&p.fo!=='' ? p.fo : '';
+      const isEmpatePalpite = isMata && palpC!=='' && palpF!=='' && +palpC===+palpF;
+      const penHtml = isMata ? `
+          <div class="pen-selector" data-pen-jogo="${j.id}" style="display:${isEmpatePalpite?'flex':'none'};align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.2);border-radius:var(--radius-sm)">
+            <span style="font-size:11px;color:var(--gold);font-weight:600">⚽ Pênaltis — quem vence?</span>
+            <select data-pen="${j.id}" style="flex:1;font-size:13px;padding:4px 8px">
+              <option value="">–</option>
+              <option value="c" ${p.pen==='c'?'selected':''}>${teamCName}</option>
+              <option value="fo" ${p.pen==='fo'?'selected':''}>${teamFName}</option>
+            </select>
+          </div>` : '';
+
       return `<div class="jogo-palpite-row">
         <div class="jogo-palpite-header">
           <span style="color:var(--text-muted)">${dateLabel} ${j.h}</span>
           <span>${f(j.c)}</span><span style="color:var(--text-muted)">vs</span><span>${f(j.fo)}</span>
           ${j.g && j.g!=='-'?`<span style="color:var(--text-muted);font-size:11px">Grupo ${j.g}</span>`:''}
+          ${isMata?'<span style="font-size:11px;color:var(--text-muted)">⚔️ Mata-Mata</span>':''}
         </div>
         <div class="score-input-group">
           <span>${j.c}</span>
           <div class="mini-inputs">
-            <input type="number" min="0" max="20" value="${p.c!==undefined&&p.c!==''?p.c:''}" data-jog="${j.id}" data-side="c" placeholder="–">
+            <input type="number" min="0" max="20" value="${palpC}" data-jog="${j.id}" data-side="c" placeholder="–" ${isMata?`onchange="togglePenSelector('${j.id}')"`:''}>
             <span class="score-vs">x</span>
-            <input type="number" min="0" max="20" value="${p.fo!==undefined&&p.fo!==''?p.fo:''}" data-jog="${j.id}" data-side="fo" placeholder="–">
+            <input type="number" min="0" max="20" value="${palpF}" data-jog="${j.id}" data-side="fo" placeholder="–" ${isMata?`onchange="togglePenSelector('${j.id}')"`:''}>
           </div>
           <span style="text-align:right">${j.fo}</span>
         </div>
+        ${penHtml}
       </div>`;
     }).join('');
+}
+
+// Mostra/oculta o seletor de pênaltis dinamicamente conforme o palpite muda para empate
+function togglePenSelector(jogoId){
+  const inputs = document.querySelectorAll(`[data-jog="${jogoId}"]`);
+  const c = document.querySelector(`[data-jog="${jogoId}"][data-side="c"]`);
+  const fo = document.querySelector(`[data-jog="${jogoId}"][data-side="fo"]`);
+  const selector = document.querySelector(`[data-pen-jogo="${jogoId}"]`);
+  if(!c||!fo||!selector) return;
+  const isEmpate = c.value!=='' && fo.value!=='' && +c.value===+fo.value;
+  selector.style.display = isEmpate ? 'flex' : 'none';
 }
 
 async function salvarPalpites(){
@@ -2736,6 +2901,16 @@ async function salvarPalpites(){
       if(!alterados[id]) alterados[id] = {...ST.palpites[jog][id]};
       alterados[id][side] = parseInt(val);
     }
+  });
+
+  // Coleta o vencedor dos pênaltis (mata-mata, quando houve empate no palpite)
+  document.querySelectorAll('[data-pen]').forEach(sel=>{
+    const id = sel.dataset.pen;
+    const val = sel.value;
+    if(!ST.palpites[jog][id]) ST.palpites[jog][id]={c:'',fo:''};
+    ST.palpites[jog][id].pen = val || '';
+    if(!alterados[id]) alterados[id] = {...ST.palpites[jog][id]};
+    alterados[id].pen = val || '';
   });
 
   save(); // localStorage imediato
@@ -2808,14 +2983,41 @@ function renderResultadoRow(j){
   const labelC = isPhC ? `<span style="color:var(--text-muted);font-style:italic">${j.c}</span>` : f(displayC);
   const labelF = isPhF ? `<span style="color:var(--text-muted);font-style:italic">${j.fo}</span>` : f(displayF);
 
+  const isMata = j.r==='mata';
+  const resC = res.c!==undefined&&res.c!==''?res.c:'';
+  const resF = res.fo!==undefined&&res.fo!==''?res.fo:'';
+  const isEmpateReal = isMata && resC!=='' && resF!=='' && +resC===+resF;
+  const teamCName = isPhC ? j.c : displayC;
+  const teamFName = isPhF ? j.fo : displayF;
+  const penHtml = isMata ? `
+    <div class="pen-real-selector" data-pen-real-jogo="${j.id}" style="display:${isEmpateReal?'flex':'none'};align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:rgba(255,71,87,.06);border:1px solid rgba(255,71,87,.2);border-radius:var(--radius-sm)">
+      <span style="font-size:11px;color:var(--red);font-weight:600">⚽ Pênaltis — vencedor real</span>
+      <select data-pen-real="${j.id}" style="flex:1;font-size:13px;padding:4px 8px">
+        <option value="">–</option>
+        <option value="c" ${res.pen==='c'?'selected':''}>${teamCName}</option>
+        <option value="fo" ${res.pen==='fo'?'selected':''}>${teamFName}</option>
+      </select>
+    </div>` : '';
+
   return `<div class="placar-row">
     <div class="placar-teams">${dateLabel} ${j.h} — ${labelC} <span style="color:var(--text-muted)">x</span> ${labelF}<br><span style="font-size:11px;color:var(--text-muted)">${groupInfo}</span></div>
     <div class="placar-inputs">
-      <input type="number" min="0" max="30" value="${res.c!==undefined&&res.c!==''?res.c:''}" data-res="${j.id}" data-side="c" placeholder="–" ${isPhC?'disabled style="opacity:.4"':''}>
+      <input type="number" min="0" max="30" value="${resC}" data-res="${j.id}" data-side="c" placeholder="–" ${isPhC?'disabled style="opacity:.4"':''} ${isMata?`onchange="togglePenRealSelector('${j.id}')"`:''}>
       <span style="color:var(--text-muted)">x</span>
-      <input type="number" min="0" max="30" value="${res.fo!==undefined&&res.fo!==''?res.fo:''}" data-res="${j.id}" data-side="fo" placeholder="–" ${isPhF?'disabled style="opacity:.4"':''}>
+      <input type="number" min="0" max="30" value="${resF}" data-res="${j.id}" data-side="fo" placeholder="–" ${isPhF?'disabled style="opacity:.4"':''} ${isMata?`onchange="togglePenRealSelector('${j.id}')"`:''}>
     </div>
+    ${penHtml}
   </div>`;
+}
+
+// Mostra/oculta o seletor de pênaltis reais conforme o placar editado muda para empate
+function togglePenRealSelector(jogoId){
+  const c = document.querySelector(`[data-res="${jogoId}"][data-side="c"]`);
+  const fo = document.querySelector(`[data-res="${jogoId}"][data-side="fo"]`);
+  const selector = document.querySelector(`[data-pen-real-jogo="${jogoId}"]`);
+  if(!c||!fo||!selector) return;
+  const isEmpate = c.value!=='' && fo.value!=='' && +c.value===+fo.value;
+  selector.style.display = isEmpate ? 'flex' : 'none';
 }
 
 async function salvarResultados(){
@@ -2832,6 +3034,16 @@ async function salvarResultados(){
       if(!alterados[id]) alterados[id] = {...ST.resultados[id]};
       alterados[id][side] = parsed;
     }
+  });
+
+  // Coleta o vencedor real dos pênaltis (mata-mata, quando placar real for empate)
+  document.querySelectorAll('[data-pen-real]').forEach(sel=>{
+    const id = sel.dataset.penReal;
+    const val = sel.value;
+    if(!ST.resultados[id]) ST.resultados[id]={c:'',fo:''};
+    ST.resultados[id].pen = val || '';
+    if(!alterados[id]) alterados[id] = {...ST.resultados[id]};
+    alterados[id].pen = val || '';
   });
 
   // Só envia jogos com ambos os gols preenchidos
@@ -2970,7 +3182,7 @@ function openPerfil(nome, filtro){
       if(!p||p.c===''||p.c===null) return;
       const res = ST.resultados[j.id];
       const hasRes = res&&res.c!==''&&res.c!==null&&res.c!==undefined;
-      const pts = hasRes ? calcPontosJogo(j.id, p.c,p.fo,res.c,res.fo) : null;
+      const pts = hasRes ? calcPontosJogo(j.id, p.c,p.fo,res.c,res.fo, null, p.pen, res.pen) : null;
       const ptsCls = pts===65?'pts-65':pts===50?'pts-50':pts>=35?'pts-35':pts>=20?'pts-20':pts>=10?'pts-15':'pts-0';
       const ptsHtml = pts!==null ? `<span class="palpite-pts ${ptsCls}">+${pts}</span>` : '';
       let teamC=j.c, teamF=j.fo;
