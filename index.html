@@ -370,7 +370,7 @@
   .palpite-item {
     display: flex; align-items: center; justify-content: space-between;
     background: var(--navy-light); border-radius: var(--radius-sm);
-    padding: 8px 12px; font-size: 13px;
+    padding: 8px 12px; font-size: 13px; gap: 8px;
   }
   .palpite-name { font-weight: 600; color: var(--text); }
   .palpite-score {
@@ -1036,7 +1036,7 @@
 // ═══════════════════════════════════════════════════
 //  ⚙️  CONFIGURAÇÃO — substitua pela sua URL do Apps Script
 // ═══════════════════════════════════════════════════
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-VVaEluW_yef_Nc7NGUjGG-4JkQ4MkxqTERKpevHPNwPcDCAg5kWeGOHzezuNLBIV/exec"; // ← cole aqui após implantar
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKesd0iWyH_9MMpdg0eCoJqOe2My0zsLV_DVEbcWPeBIlt4yFEToaFkVeA4pQsADZV/exec"; // ← cole aqui após implantar
 // ═══════════════════════════════════════════════════
 //  DATA: GRUPOS & JOGOS COPA 2026
 // ═══════════════════════════════════════════════════
@@ -1885,7 +1885,16 @@ function renderJogoCard(j){
       ptsHtml = `<span class="palpite-pts ${cls}">+${pts}</span>`;
     }
     const scoreColor = pts===65?'var(--text)':pts===50?'var(--gold)':pts>0?'var(--green)':'var(--text-muted)';
-    return `<div class="palpite-item"><span class="palpite-name">${jg}</span><span class="palpite-score" style="color:${scoreColor}">${p.c}–${p.fo}${ptsHtml}</span></div>`;
+    // Mostra quem o jogador escolheu como vencedor dos pênaltis, quando houver empate no palpite
+    const isEmpatePalp = +p.c === +p.fo;
+    let penLabel = '';
+    if(j.r==='mata' && isEmpatePalp && p.pen){
+      const cl = buildClassifiedMap();
+      const teamC = resolveTeam(j.c, cl), teamF = resolveTeam(j.fo, cl);
+      const penTeam = p.pen==='c' ? teamC : teamF;
+      penLabel = `<span style="font-size:10px;color:var(--gold);display:block;margin-top:1px">⚽ pên: ${penTeam}</span>`;
+    }
+    return `<div class="palpite-item"><span class="palpite-name">${jg}</span><span style="text-align:right"><span class="palpite-score" style="color:${scoreColor}">${p.c}–${p.fo}${ptsHtml}</span>${penLabel}</span></div>`;
   }).join('');
 
   return `
@@ -3194,12 +3203,18 @@ function openPerfil(nome, filtro){
       const ipF=teamF===j.fo&&j.fo.match(/^(1º|2º|3º|Venc\.|Perd\.)/);
       const lC=ipC?`<span style="color:var(--text-muted);font-style:italic;font-size:11px">${j.c}</span>`:f(teamC);
       const lF=ipF?`<span style="color:var(--text-muted);font-style:italic;font-size:11px">${j.fo}</span>`:f(teamF);
-      const realHtml = hasRes ? `<div class="perfil-jogo-real">Real: ${res.c}–${res.fo}</div>` : '';
+      const realHtml = hasRes ? `<div class="perfil-jogo-real">Real: ${res.c}–${res.fo}${res.pen?` (pên: ${res.pen==='c'?teamC:teamF})`:''}</div>` : '';
       const scoreColor = pts===65?'var(--text)':pts===50?'var(--gold)':pts>0?'var(--green)':'var(--text-muted)';
+      const isEmpatePalp = +p.c === +p.fo;
+      const penPalpHtml = (j.r==='mata' && isEmpatePalp && p.pen)
+        ? `<div style="font-size:10px;color:var(--gold);margin-top:2px">⚽ pênalti: ${p.pen==='c'?teamC:teamF}</div>` : '';
       palpitesHtml += `
         <div class="perfil-jogo">
           <div class="perfil-jogo-teams">${lC} <span style="color:var(--text-muted);font-size:11px">vs</span> ${lF}</div>
-          <div class="perfil-jogo-palpite" style="color:${scoreColor}">${p.c}–${p.fo}${ptsHtml}</div>
+          <div>
+            <div class="perfil-jogo-palpite" style="color:${scoreColor}">${p.c}–${p.fo}${ptsHtml}</div>
+            ${penPalpHtml}
+          </div>
           ${realHtml}
         </div>`;
     });
