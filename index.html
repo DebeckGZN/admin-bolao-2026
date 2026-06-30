@@ -1337,14 +1337,19 @@ function calcAcertosUnicosMap(){
   return map;
 }
 
-// Pontos de um palpite considerando o bônus de "Acertou Sozinho" (+65 em vez de +50)
-// e o bônus de pênaltis no mata-mata (+15 se acertou quem vence o empate).
+// Pontos de um palpite considerando:
+//   +bônus "Acertou Sozinho" (+15 extra se foi o único com placar exato)
+//   +bônus pênaltis mata-mata (+15 se acertou o vencedor nos pênaltis)
+// Exemplos: placar exato normal=50; sozinho=65; pênalti=65; sozinho+pênalti=80
 // unicosMap: resultado de calcAcertosUnicosMap() — opcional, recalculado se omitido.
 function calcPontosJogo(jogoId, palpC, palpF, realC, realF, unicosMap, palpPen, realPen){
   const pts = calcPontos(palpC, palpF, realC, realF, palpPen, realPen);
-  if(pts !== null && pts >= 50 && pts < 65){
+  if(pts === null) return null;
+  // Bônus de "Acertou Sozinho": +15 sempre que for o único com placar exato,
+  // independente de outros bônus já incluídos (pênaltis, etc.)
+  if(acertouPlacar(palpC, palpF, realC, realF)){
     const map = unicosMap || calcAcertosUnicosMap();
-    if(map[jogoId]) return pts - 50 + 65; // preserva bônus de pênalti se houver
+    if(map[jogoId]) return pts + 15;
   }
   return pts;
 }
@@ -1636,7 +1641,12 @@ function renderRanking(){
       <td class="rank-pts">${r.pts}</td>
       <td><span class="badge-small badge-acerto">✓ ${r.acertos}</span></td>
       <td><span class="badge-small badge-placar">🎯 ${r.placares}</span></td>
-      <td style="font-size:16px;letter-spacing:-2px">${todosTrofs.map(t=>t.icon).join('')||'–'}</td>
+      <td style="font-size:16px;letter-spacing:-2px">${(()=>{
+        const nonSozinho = todosTrofs.filter(t=>t.label!=='Acertou Sozinho').map(t=>t.icon).join('');
+        const sozinhoCount = todosTrofs.filter(t=>t.label==='Acertou Sozinho').length;
+        const sozinhoTag = sozinhoCount > 0 ? `<span style="font-size:11px;white-space:nowrap">💡${sozinhoCount}</span>` : '';
+        return (nonSozinho||sozinhoTag) ? nonSozinho+sozinhoTag : '–';
+      })()}</td>
     </tr>`;
   }).join('');
 
@@ -1893,7 +1903,7 @@ function renderJogoCard(j){
     let pts=null, ptsHtml='';
     if(hasResult){
       pts = calcPontosJogo(j.id, p.c,p.fo,res.c,res.fo, null, p.pen, res.pen);
-      const cls = pts===65?'pts-65':pts>=50?'pts-50':pts>=35?'pts-35':pts>=20?'pts-20':pts>=15?'pts-15':'pts-0';
+      const cls = pts>=65?'pts-65':pts>=50?'pts-50':pts>=35?'pts-35':pts>=20?'pts-20':pts>=15?'pts-15':'pts-0';
       ptsHtml = `<span class="palpite-pts ${cls}">+${pts}</span>`;
     }
     const scoreColor = pts===65?'var(--text)':pts===50?'var(--gold)':pts>0?'var(--green)':'var(--text-muted)';
@@ -3211,7 +3221,7 @@ function openPerfil(nome, filtro){
       const res = ST.resultados[j.id];
       const hasRes = res&&res.c!==''&&res.c!==null&&res.c!==undefined;
       const pts = hasRes ? calcPontosJogo(j.id, p.c,p.fo,res.c,res.fo, null, p.pen, res.pen) : null;
-      const ptsCls = pts===65?'pts-65':pts===50?'pts-50':pts>=35?'pts-35':pts>=20?'pts-20':pts>=10?'pts-15':'pts-0';
+      const ptsCls = pts>=65?'pts-65':pts===50?'pts-50':pts>=35?'pts-35':pts>=20?'pts-20':pts>=10?'pts-15':'pts-0';
       const ptsHtml = pts!==null ? `<span class="palpite-pts ${ptsCls}">+${pts}</span>` : '';
       let teamC=j.c, teamF=j.fo;
       if(j.r==='mata'){teamC=resolveTeam(j.c,cl)||j.c; teamF=resolveTeam(j.fo,cl)||j.fo;}
