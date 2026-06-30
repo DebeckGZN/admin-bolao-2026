@@ -1479,6 +1479,7 @@ function calcTrofeus(rank){
   }
 
   // ── Acertou placar sozinho (tempo real) — agora vale +65 pts ──
+  const _clTrofeus = buildClassifiedMap();
   JOGOS_BASE.forEach(jogo=>{
     const res=ST.resultados[jogo.id];
     if(!res||res.c===''||res.c===null||res.c===undefined) return;
@@ -1487,7 +1488,12 @@ function calcTrofeus(rank){
       return p&&acertouPlacar(p.c,p.fo,res.c,res.fo);
     });
     if(acertaram.length===1){
-      trofeus[acertaram[0].nome].push({icon:'💡',label:'Acertou Sozinho',motivo:`Placar exato de ${f(jogo.c)} ${res.c}–${res.fo} ${f(jogo.fo)} (+65 pts)`});
+      const tC = jogo.r==='mata' ? (resolveTeam(jogo.c,_clTrofeus)||jogo.c) : jogo.c;
+      const tF = jogo.r==='mata' ? (resolveTeam(jogo.fo,_clTrofeus)||jogo.fo) : jogo.fo;
+      const isPh = s => s.match(/^(1º|2º|3º|Venc\.|Perd\.)/);
+      const nC = isPh(tC) ? jogo.c : tC;
+      const nF = isPh(tF) ? jogo.fo : tF;
+      trofeus[acertaram[0].nome].push({icon:'💡',label:'Acertou Sozinho',motivo:`Placar exato de ${f(nC)} ${res.c}–${res.fo} ${f(nF)} (+65 pts)`});
     }
   });
 
@@ -1761,6 +1767,7 @@ function renderConquistas(rank){
   // ── Tabela: Acertou Sozinho (agora vale +65 pts) ──
   const sozinhoRows = [];
   const rodadaLabel = {r1:'1ª Rodada',r2:'2ª Rodada',r3:'3ª Rodada',mata:'Mata-Mata'};
+  const _clMural = buildClassifiedMap();
   JOGOS_BASE.forEach(jogo=>{
     const res = ST.resultados[jogo.id];
     if(!res||res.c===''||res.c===null||res.c===undefined) return;
@@ -1769,10 +1776,15 @@ function renderConquistas(rank){
       return p && acertouPlacar(p.c,p.fo,res.c,res.fo);
     });
     if(acertaram.length===1){
+      const tC = jogo.r==='mata' ? (resolveTeam(jogo.c,_clMural)||jogo.c) : jogo.c;
+      const tF = jogo.r==='mata' ? (resolveTeam(jogo.fo,_clMural)||jogo.fo) : jogo.fo;
+      const isPh = s => s.match(/^(1º|2º|3º|Venc\.|Perd\.)/);
+      const nC = isPh(tC) ? jogo.c : tC;
+      const nF = isPh(tF) ? jogo.fo : tF;
       sozinhoRows.push({
         nome: acertaram[0].nome,
         rodada: rodadaLabel[jogo.r]||jogo.r,
-        placar: `${f(jogo.c)} ${res.c} x ${res.fo} ${f(jogo.fo)}`,
+        placar: `${f(nC)} ${res.c} x ${res.fo} ${f(nF)}`,
         data: jogo.d
       });
     }
@@ -2623,7 +2635,11 @@ function buildClassifiedMap(){
     let winner=null, loser=null;
     if(rc>rf){ winner=teamC; loser=teamF; }
     else if(rc<rf){ winner=teamF; loser=teamC; }
-    // else: draw, winner TBD (penalties) — skip
+    else if(rc===rf && res.pen){
+      // Empate decidido nos pênaltis — propaga o vencedor para as fases seguintes
+      winner = res.pen==='c' ? teamC : teamF;
+      loser  = res.pen==='c' ? teamF : teamC;
+    }
     if(winner){ cl['V:'+labelFor(j)]=winner; cl['P:'+labelFor(j)]=loser; }
   });
 
