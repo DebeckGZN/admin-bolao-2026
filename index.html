@@ -1723,10 +1723,30 @@ function renderConquistas(rank){
     });
   }
 
+  // Coleta todos os empatados no topo de cada categoria
+  const topAcertos = maisAcertos.acertos > 0 ? rank.filter(r=>r.acertos===maisAcertos.acertos) : [];
+  const topPlacares = maisPlacares.placares > 0 ? rank.filter(r=>r.placares===maisPlacares.placares) : [];
+  const topSeqNomes = (melhorSeq>=2 && jogosComResultado.length>0) ? (() => {
+    const nomes = []; rank.forEach(r=>{
+      let seq=0,mx=0;
+      jogosComResultado.forEach(jogo=>{
+        const p=(ST.palpites[r.nome]||{})[jogo.id]; const res=ST.resultados[jogo.id];
+        if(p&&acertouResultado(p.c,p.fo,res.c,res.fo)){seq++;if(seq>mx)mx=seq;}else{seq=0;}
+      }); if(mx===melhorSeq) nomes.push(r.nome);
+    }); return nomes;
+  })() : [];
+
+  const joinNomes = arr => arr.length > 0 ? arr.map(r=>typeof r==='string'?r:r.nome).join(' · ') : '—';
   const cards = [];
-  cards.push({icon:'⚽',label:'Acertos',player:maisAcertos.acertos>0?maisAcertos.nome:'—',detail:maisAcertos.acertos>0?`${maisAcertos.acertos} acertos`:'Sem dados ainda'});
-  cards.push({icon:'🎯',label:'Placares',player:maisPlacares.placares>0?maisPlacares.nome:'—',detail:maisPlacares.placares>0?`${maisPlacares.placares} placares exatos`:'Sem dados ainda'});
-  cards.push({icon:'🔥',label:'Sequência',player:melhorSeq>=2?melhorNome:'—',detail:melhorSeq>=2?`${melhorSeq} acertos seguidos`:'Sem dados ainda'});
+  cards.push({icon:'⚽',label:'Acertos',
+    player: topAcertos.length>0 ? joinNomes(topAcertos) : '—',
+    detail: topAcertos.length>0 ? `${maisAcertos.acertos} acertos` : 'Sem dados ainda'});
+  cards.push({icon:'🎯',label:'Placares',
+    player: topPlacares.length>0 ? joinNomes(topPlacares) : '—',
+    detail: topPlacares.length>0 ? `${maisPlacares.placares} placares exatos` : 'Sem dados ainda'});
+  cards.push({icon:'🔥',label:'Sequência',
+    player: topSeqNomes.length>0 ? joinNomes(topSeqNomes) : '—',
+    detail: topSeqNomes.length>0 ? `${melhorSeq} acertos seguidos` : 'Sem dados ainda'});
 
   grid.innerHTML = cards.map(c=>`
     <div class="conquista-card">
@@ -3181,10 +3201,25 @@ function openPerfil(nome, filtro){
   const meusTrofeus = trofeus[nome]||[];
   const labelFiltro = RODADA_LABELS_MAP[filtro]||'';
 
+  // Calcula melhor sequência histórica do jogador (no filtro atual)
+  const jogosOrdenados = (filtro==='geral'
+    ? JOGOS_BASE
+    : JOGOS_BASE.filter(j=>j.r===filtro)
+  ).filter(j=>{ const res=ST.resultados[j.id]; return res&&res.c!==''&&res.c!==null&&res.c!==undefined; })
+   .sort((a,b)=>a.d.localeCompare(b.d)||a.h.localeCompare(b.h));
+  let melhorSeqPerfil=0, seqAtual=0;
+  jogosOrdenados.forEach(jogo=>{
+    const p=(ST.palpites[nome]||{})[jogo.id];
+    const res=ST.resultados[jogo.id];
+    if(p && acertouResultado(p.c,p.fo,res.c,res.fo)){ seqAtual++; if(seqAtual>melhorSeqPerfil) melhorSeqPerfil=seqAtual; }
+    else { seqAtual=0; }
+  });
+  const seqText = melhorSeqPerfil>=2 ? ` · 🔥 ${melhorSeqPerfil} seq.` : '';
+
   document.getElementById('perfilNome').textContent = nome;
   document.getElementById('perfilPts').textContent = r.pts;
   document.getElementById('perfilStats').textContent =
-    `✓ ${r.acertos} acertos · 🎯 ${r.placares} placares` +
+    `✓ ${r.acertos} acertos · 🎯 ${r.placares} placares${seqText}` +
     (filtro!=='geral' ? ` · ${labelFiltro}` : ` · 🏆 ${meusTrofeus.length} troféus`);
 
   const body = document.getElementById('perfilBody');
